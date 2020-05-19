@@ -43,7 +43,7 @@ int main(int argc, char** argv){
      exit(0);
   }
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6,18,0)
-  FSHistogram::enableRDataFrame(true);
+  //FSHistogram::enableRDataFrame(true);
 #endif
   writeHistograms(inTreeName, outHistName);
   //FSHistogram::executeRDataFrame();
