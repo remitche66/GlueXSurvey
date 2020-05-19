@@ -48,6 +48,9 @@ int main(int argc, char** argv){
   writeHistograms(inTreeName, outHistName);
   //FSHistogram::executeRDataFrame();
   //writeHistograms(inTreeName, outHistName);
+  cout << "*************************************************\n"
+          "  FINISHED SurveyFSTreeToHist \n"
+          "***********************************************************\n";
   return 0;
 }
 
