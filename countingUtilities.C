@@ -612,15 +612,11 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
 }
 
 
-void makePDF(TString histFileName, TString outputDirectory){
+void makePDF(TString histFileName, TString outputDirectory, TString baseName){
   outputDirectory = FSSystem::getAbsolutePath(outputDirectory,false);
   if (outputDirectory == ""){ cout << "problem with output directory" << endl; exit(0); }
   vector<TString> nameParts = FSString::parseTString(histFileName,".",true);
-  TString outputName("");
-  if (nameParts.size() > 2){
-    for (unsigned int i = 0; i < nameParts.size()-2; i++){ outputName += nameParts[i]; }
-  }
-  else{ outputName = histFileName; }
+  TString outputName = baseName;
   TString fsCode = readHistograms(histFileName);
   FSModeInfo miFS(fsCode);
   TString fsDescription(getDescription(miFS.modeCode1(),miFS.modeCode2(),0));

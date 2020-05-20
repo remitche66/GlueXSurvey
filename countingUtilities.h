@@ -46,7 +46,7 @@ TH1F* getTH1F(TString fileName, TString treeName, TString histName);
 void writeHistograms(TString treeFileName, TString histFileName);
 TString readHistograms(TString histFileName);
 pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures);
-void makePDF(TString histFileName, TString outputDirectory);
+void makePDF(TString histFileName, TString outputDirectory, TString baseName);
 vector< vector<int> > pushBackToEach(vector< vector<int> > originalList, vector<int> newPart);
 vector<TString> expandIntegers(TString input);
 
