@@ -652,7 +652,8 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
     "  \\item Cuts on all intermediate state masses are 50~MeV wide,\n"
     "  including $\\pi^0$, $\\eta$, $K_{s}$, and $\\Lambda$ masses (when not constrained).\n"
     "  \\item Photon combinations not from a $\\pi^0$ are vetoed if they land in a 50~MeV wide window\n"
-    "    around the $\\pi^0$ mass.\n"); 
+    "    around the $\\pi^0$ mass.\n" 
+    " \\end{itemize}\n");
   vector<TString> subModes = getSubModes(fsCode);
   for (unsigned int i = 0; i < subModes.size(); i++){
     pair<TString,TString> histInfo;
