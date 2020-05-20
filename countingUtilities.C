@@ -640,6 +640,19 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
     "\\date{\\vspace{-1cm}\\today}\n"
     "\\maketitle\n\n"
     "\\tableofcontents\n\n");
+  FSString::writeTStringToFile(latexFile,
+    "\\newpage\n\n"
+    "\\section{Notes on Selection Criteria}\n\n"
+    " Cuts applied in addition to those applied during the analysis launch:\n"
+    " \\begin{itemize}\n"
+    "  \\item Cuts on $\\chi^2/DOF$, $t$, RF timing, and beam energy are described\n"
+    "           in the captions under the figures. "
+    "  \\item The number of unused tracks is $\\le 1$.\n"
+    "  \\item All photons have a shower quality $>0.5$.\n"
+    "  \\item Cuts on all intermediate state masses are 50~MeV wide,\n"
+    "  including $\\pi^0$, $\\eta$, $K_{s}$, and $\\Lambda$ masses (when not constrained).\n"
+    "  \\item Photon combinations not from a $\\pi^0$ are vetoed if they land in a 50~MeV wide window\n"
+    "    around the $\\pi^0$ mass.\n"); 
   vector<TString> subModes = getSubModes(fsCode);
   for (unsigned int i = 0; i < subModes.size(); i++){
     pair<TString,TString> histInfo;
