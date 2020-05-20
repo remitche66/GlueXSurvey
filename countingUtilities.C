@@ -615,10 +615,16 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
 void makePDF(TString histFileName, TString outputDirectory){
   outputDirectory = FSSystem::getAbsolutePath(outputDirectory,false);
   if (outputDirectory == ""){ cout << "problem with output directory" << endl; exit(0); }
+  vector<TString> nameParts = FSString::parseTString(histFileName,".",true);
+  TString outputName("");
+  if (nameParts.size() > 2){
+    for (unsigned int i = 0; i < nameParts.size()-2; i++){ outputName += nameParts[i]; }
+  }
+  else{ outputName = histFileName; }
   TString fsCode = readHistograms(histFileName);
   FSModeInfo miFS(fsCode);
   TString fsDescription(getDescription(miFS.modeCode1(),miFS.modeCode2(),0));
-  outputDirectory = outputDirectory + "/PDF_"+fsCode;
+  outputDirectory = outputDirectory + "/" + outputName;
   if (FSSystem::getAbsolutePath(outputDirectory,false) != "")
     { cout << "directory already exists: " << outputDirectory << endl; 
       cout << "WARNING, replacing it!" << endl;  system("rm -rf "+outputDirectory);}
@@ -627,7 +633,7 @@ void makePDF(TString histFileName, TString outputDirectory){
   TString outputFigures = outputDirectory + "/figures";
   cout << "Creating figures directory: " << outputFigures << endl;
   system("mkdir "+outputFigures);
-  TString latexFile = outputDirectory + "/PDF_"+fsCode+".tex";
+  TString latexFile = outputDirectory + "/"+outputName+".tex";
   cout << "Creating latex file:        " << latexFile << endl;
   FSString::latexHeader(latexFile);
   FSString::writeTStringToFile(latexFile,
