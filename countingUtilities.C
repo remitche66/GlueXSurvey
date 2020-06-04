@@ -205,7 +205,7 @@ vector<TString> getSubModes(TString fsCode){
   setModeCode3Particles();
   FSModeInfo miFS(fsCode);
   vector<TString> subModes; subModes.push_back("0_"+miFS.modeString());
-  int max3 = 4;  TString smax3 = FSString::int2TString(max3);
+  int max3 = 2;  TString smax3 = FSString::int2TString(max3);
   TString sMax(""); for (unsigned int i = 0; i < modeCode3Particles.size(); i++){ sMax += smax3; }
   vector<TString> modeCode3List = expandIntegers(sMax);
   for (unsigned int i = 0; i < modeCode3List.size(); i++){
