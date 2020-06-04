@@ -101,14 +101,19 @@ TString getDescription(int modeCode1, int modeCode2, int modeCode3){
 
 TString getFSCode(int modeCode1, int modeCode2, int modeCode3){
   setModeCode3Particles();
+  TString fsCode("");
   int n1 = 1; int n2 = 10;
   for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
     int n = (((modeCode3%n2)-(modeCode3%n1))/n1); n1*=10; n2*=10;
+    FSModeInfo mi1(modeCode1,modeCode2);
     modeCode1 += n*modeCode3Particles[iP].decay->modeCode1();
     modeCode2 += n*modeCode3Particles[iP].decay->modeCode2();
+    FSModeInfo mi2(modeCode1,modeCode2);
+    if (n*modeCode3Particles[iP].decay->modeNParticles() + mi1.modeNParticles()
+         != mi2.modeNParticles()){ FSModeInfo mi(0,0); return mi.modeString(); } 
   }
-  TString fsCode = FSString::int2TString(modeCode2)+"_"+
-                   FSString::int2TString(modeCode1);
+  fsCode = FSString::int2TString(modeCode2)+"_"+
+           FSString::int2TString(modeCode1);
   return fsCode;
 }
 
@@ -215,13 +220,14 @@ vector<TString> getSubModes(TString fsCode){
     if (modeCode3 == 0) continue;
     if (getParticles(0,0,modeCode3).size() > MAXNCODE3) continue;
     FSModeInfo mi3(getFSCode(0,0,modeCode3));
+    if (mi3.modeNParticles() == 0) continue;
     if (!miFS.modeContains(mi3.modeString())) continue;
     subModes.push_back(FSString::int2TString(modeCode3)+"_"+
                        FSString::int2TString(miFS.modeCode2() - mi3.modeCode2())+"_"+
                        FSString::int2TString(miFS.modeCode1() - mi3.modeCode1()));
   }
-//cout << "SUBMODES:" << endl;
-//for (unsigned int i = 0; i < subModes.size(); i++){ cout << subModes[i] << endl; }
+cout << "SUBMODES:" << endl;
+for (unsigned int i = 0; i < subModes.size(); i++){ cout << subModes[i] << endl; }
   return subModes;
 }
 

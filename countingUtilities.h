@@ -12,13 +12,14 @@
 
 
 // ************************
-// define a new modeCode3
+// define a new modeCode3 (flexible)
 // ************************
-//  modeCode3 = abcd
+//  modeCode3 = abcde
 //               a: #phi
 //               b: #omega
 //               c: #etaprime
-//               d: #eta+-0
+//               d: #eta000
+//               e: #eta+-0
 
 
 class ModeCode3Particle{
