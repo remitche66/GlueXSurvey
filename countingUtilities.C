@@ -11,6 +11,11 @@ void setModeCode3Particles(){
                     eta3pi.decay = new FSModeInfo("pi+ pi- pi0");
                     eta3pi.mass  = "0.548";
                     eta3pi.cut   = "0.025";
+  ModeCode3Particle eta3pi0; 
+                    eta3pi0.name  = "eta000";
+                    eta3pi0.decay = new FSModeInfo("pi0 pi0 pi0");
+                    eta3pi0.mass  = "0.548";
+                    eta3pi0.cut   = "0.025";
   ModeCode3Particle etaprime; 
                     etaprime.name  = "etaprime";
                     etaprime.decay = new FSModeInfo("eta pi+ pi-");
@@ -27,6 +32,7 @@ void setModeCode3Particles(){
                     phi.mass  = "1.020";
                     phi.cut   = "0.025";
   modeCode3Particles.push_back(eta3pi);
+  modeCode3Particles.push_back(eta3pi0);
   modeCode3Particles.push_back(etaprime);
   modeCode3Particles.push_back(omega);
   modeCode3Particles.push_back(phi);
@@ -43,13 +49,14 @@ void setModeCode3Particles(){
   particleOrder["eta"]      = 11;
   particleOrder["etaprime"] = 12;
   particleOrder["eta+-0"]   = 13;
-  particleOrder["pi+"]      = 14;
-  particleOrder["pi-"]      = 15;
-  particleOrder["pi0"]      = 16;
-  particleOrder["p-"]       = 17;
-  particleOrder["p+"]       = 18;
-  particleOrder["ALambda"]  = 19;
-  particleOrder["Lambda"]   = 20;
+  particleOrder["eta000"]   = 14;
+  particleOrder["pi+"]      = 15;
+  particleOrder["pi-"]      = 16;
+  particleOrder["pi0"]      = 17;
+  particleOrder["p-"]       = 18;
+  particleOrder["p+"]       = 19;
+  particleOrder["ALambda"]  = 20;
+  particleOrder["Lambda"]   = 21;
 }
 
 
