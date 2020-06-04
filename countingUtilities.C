@@ -205,13 +205,15 @@ vector<TString> getSubModes(TString fsCode){
   setModeCode3Particles();
   FSModeInfo miFS(fsCode);
   vector<TString> subModes; subModes.push_back("0_"+miFS.modeString());
-  int max3 = 2;  TString smax3 = FSString::int2TString(max3);
-  TString sMax(""); for (unsigned int i = 0; i < modeCode3Particles.size(); i++){ sMax += smax3; }
+  int MAXNCODE3 = 4;
+  int MAXNCODE3SAME = 2;
+  TString sMAX3 = FSString::int2TString(MAXNCODE3SAME);
+  TString sMax(""); for (unsigned int i = 0; i < modeCode3Particles.size(); i++){ sMax += sMAX3; }
   vector<TString> modeCode3List = expandIntegers(sMax);
   for (unsigned int i = 0; i < modeCode3List.size(); i++){
     int modeCode3 = FSString::TString2int(modeCode3List[i]);
     if (modeCode3 == 0) continue;
-    if (getParticles(0,0,modeCode3).size() > max3) continue;
+    if (getParticles(0,0,modeCode3).size() > MAXNCODE3) continue;
     FSModeInfo mi3(getFSCode(0,0,modeCode3));
     if (!miFS.modeContains(mi3.modeString())) continue;
     subModes.push_back(FSString::int2TString(modeCode3)+"_"+
