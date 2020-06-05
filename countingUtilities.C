@@ -59,15 +59,50 @@ void setModeCode3Particles(){
   particleOrder["Lambda"]   = 21;
 }
 
-
-
-vector<TString> getParticles(int modeCode1, int modeCode2, int modeCode3){
+vector<int> getModeCode3Numbers(int modeCode3){
   setModeCode3Particles();
-  vector<TString> particles;
-  if (modeCode1 + modeCode2 > 0){ FSModeInfo mi(modeCode1,modeCode2); particles = mi.particles(); }
+  vector<int> numbers;
   int n1 = 1; int n2 = 10;
   for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
     int n = (((modeCode3%n2)-(modeCode3%n1))/n1); n1*=10; n2*=10;
+    numbers.push_back(n);
+  }
+  return numbers;
+}
+
+FSModeInfo addModeCode3(FSModeInfo mi, int modeCode3, int sign){
+  vector<int> numbers = getModeCode3Numbers(modeCode3);
+  int modeCode1 = mi.modeCode1(); 
+  int modeCode2 = mi.modeCode2(); 
+  for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
+    int n = numbers[iP];
+    FSModeInfo mi1(modeCode1,modeCode2);
+    modeCode1 += sign*n*modeCode3Particles[iP].decay->modeCode1();
+    modeCode2 += sign*n*modeCode3Particles[iP].decay->modeCode2();
+    FSModeInfo mi2(modeCode1,modeCode2);
+    if (mi1.modeNParticles() + sign*n*modeCode3Particles[iP].decay->modeNParticles()
+         != mi2.modeNParticles()) return FSModeInfo(0,0);
+  }
+  return FSModeInfo(modeCode1,modeCode2);
+}
+
+FSModeInfo getRecoilBaryon(FSModeInfo mi){
+  FSModeInfo miP("p+");      if (mi.modeContains(miP.modeString())) return miP;
+  FSModeInfo miL("Lambda");  if (mi.modeContains(miL.modeString())) return miL;
+  cout << "no recoil proton or Lambda? quitting " << endl; exit(0);
+  return FSModeInfo("");
+}
+
+FSModeInfo removeRecoilBaryon(FSModeInfo mi){
+  FSModeInfo miB = getRecoilBaryon(mi);
+  return FSModeInfo(mi.modeCode1()-miB.modeCode1(), mi.modeCode2()-miB.modeCode2());
+}
+
+vector<TString> getParticles(FSModeInfo mi, int modeCode3){
+  vector<int> numbers = getModeCode3Numbers(modeCode3);
+  vector<TString> particles = mi.particles();
+  for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
+    int n = numbers[iP];
     for (int i = 0; i < n; i++){ particles.push_back(modeCode3Particles[iP].name); }
   }
   if (particles.size() == 0) return particles;
@@ -79,18 +114,8 @@ vector<TString> getParticles(int modeCode1, int modeCode2, int modeCode3){
   return particles;
 }
 
-
-TString getDescription(TString subMode){
-  vector<TString> parts = FSString::parseTString(subMode,"_");
-  if (parts.size() != 3) {cout << "problem in getDescription" << endl; exit(0); }
-  int modeCode3 = FSString::TString2int(parts[0]);
-  int modeCode2 = FSString::TString2int(parts[1]);
-  int modeCode1 = FSString::TString2int(parts[2]);
-  return getDescription(modeCode1,modeCode2,modeCode3);
-}
-
-TString getDescription(int modeCode1, int modeCode2, int modeCode3){
-  vector<TString> particles = getParticles(modeCode1,modeCode2,modeCode3);
+TString getDescription(FSModeInfo mi, int modeCode3){
+  vector<TString> particles = getParticles(mi,modeCode3);
   TString description("");
   for (unsigned int i = 0; i < particles.size(); i++){
     description += particles[i];
@@ -99,76 +124,33 @@ TString getDescription(int modeCode1, int modeCode2, int modeCode3){
   return description;
 }
 
-TString getFSCode(int modeCode1, int modeCode2, int modeCode3){
-  setModeCode3Particles();
-  TString fsCode("");
-  int n1 = 1; int n2 = 10;
-  for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
-    int n = (((modeCode3%n2)-(modeCode3%n1))/n1); n1*=10; n2*=10;
-    FSModeInfo mi1(modeCode1,modeCode2);
-    modeCode1 += n*modeCode3Particles[iP].decay->modeCode1();
-    modeCode2 += n*modeCode3Particles[iP].decay->modeCode2();
-    FSModeInfo mi2(modeCode1,modeCode2);
-    if (n*modeCode3Particles[iP].decay->modeNParticles() + mi1.modeNParticles()
-         != mi2.modeNParticles()){ FSModeInfo mi(0,0); return mi.modeString(); } 
-  }
-  fsCode = FSString::int2TString(modeCode2)+"_"+
-           FSString::int2TString(modeCode1);
-  return fsCode;
-}
 
-
-vector< vector<int> > getComboIndices(int modeCode3){
-  setModeCode3Particles();
-  vector< vector<int> > indices;  indices.resize(modeCode3Particles.size());
-  int indexStart = 6; vector<int> index;
-  int n1 = 1; int n2 = 10;
+TString getComboFormat(FSModeInfo mi, int modeCode3, int offset){
+  vector<int> numbers = getModeCode3Numbers(modeCode3);
+  TString comboFormat = mi.modeComboFormat(1);
   for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
-    int n = (((modeCode3%n2)-(modeCode3%n1))/n1); n1*=10; n2*=10;
-    index.clear();  for (int i = 0; i < n; i++){ index.push_back(indexStart++); } indices[iP] = index;
-  }
-  return indices;
-}
-
-TString getComboFormat(int modeCode1, int modeCode2, int modeCode3, int fullModeCode3){
-  TString comboFormat("");
-  if (modeCode1+modeCode2>0){ FSModeInfo mi(modeCode1,modeCode2); comboFormat = mi.modeComboFormat(1); }
-  vector< vector<int> > comboIndices = getComboIndices(fullModeCode3);
-  int n1 = 1; int n2 = 10;
-  for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
-    int n = (((modeCode3%n2)-(modeCode3%n1))/n1); n1*=10; n2*=10;
+    int n = numbers[iP];
     for (unsigned int j = 0; j < n; j++){
       if (comboFormat != "") comboFormat += ",";
-      comboFormat += modeCode3Particles[iP].decay->modeComboFormat(comboIndices[iP][j]);
+      TString name = modeCode3Particles[iP].name; name += FSString::int2TString(j+1+offset);
+      comboFormat += modeCode3Particles[iP].decay->modeComboFormat(1,name);
     }
   }
   return comboFormat;
 }
 
-TString removeRecoilBaryon(int& modeCode1, int& modeCode2, int& modeCode3){
-  setModeCode3Particles();
-  FSModeInfo mi(modeCode1,modeCode2);
-  FSModeInfo miProton("p+");
-  FSModeInfo miLambda("Lambda");
-  if (mi.modeContains(miProton.modeString())){ modeCode1 -= miProton.modeCode1();
-                                               modeCode2 -= miProton.modeCode2(); 
-                                               return miProton.modeString();}
-  else if (mi.modeContains(miLambda.modeString())){ modeCode1 -= miLambda.modeCode1();
-                                                    modeCode2 -= miLambda.modeCode2(); 
-                                                    return miLambda.modeString();}
-  cout << "no recoil proton or Lambda? quitting " << endl; exit(0);
-  return TString("");
-}
-
 
 TString getSubModeCuts(int modeCode3){
+  vector<int> numbers = getModeCode3Numbers(modeCode3);
   TString cuts("");
-  vector< vector<int> > comboIndices = getComboIndices(modeCode3);
-  for (unsigned int iP = 0; iP < comboIndices.size(); iP++){
-    for (unsigned int j = 0; j < comboIndices[iP].size(); j++){
+  for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
+    int modeCode3iP = pow(10,iP);
+    int n = numbers[iP];
+    for (unsigned int j = 0; j < n; j++){
       if (cuts != "") cuts += "&&";
+      TString comboFormat = getComboFormat(FSModeInfo(0,0),modeCode3iP,j);
       cuts += "(abs(MASS("
-               + modeCode3Particles[iP].decay->modeComboFormat(comboIndices[iP][j]) + ")-"
+               + comboFormat + ")-"
                + modeCode3Particles[iP].mass + ")<"
                + modeCode3Particles[iP].cut + ")";
     }
@@ -178,11 +160,9 @@ TString getSubModeCuts(int modeCode3){
 }
 
 
-TString getOtherCuts(int modeCode1, int modeCode2, int modeCode3, TString cutCode, TString histType){
-  setModeCode3Particles();
-  int modeCode1X = modeCode1; int modeCode2X = modeCode2; int modeCode3X = modeCode3;
-  removeRecoilBaryon(modeCode1X,modeCode2X,modeCode3X);
-  TString listX(getComboFormat(modeCode1X,modeCode2X,modeCode3X,modeCode3));
+TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode, TString histType){
+  FSModeInfo miX = removeRecoilBaryon(mi);
+  TString listX(getComboFormat(miX,modeCode3));
   FSCut::defineCut("T","(-1*MASS2("+listX+";GLUEXBEAM)<0.5)&&(REnPB>8.0)");
   if (histType == "T") FSCut::defineCut("T","(REnPB>8.0)");
   FSCut::defineCut("Chi2DOF","Chi2DOF<5.0","Chi2DOF>10.0&&Chi2DOF<15.0",1.0);
@@ -206,45 +186,42 @@ TString getOtherCuts(int modeCode1, int modeCode2, int modeCode3, TString cutCod
 }
 
 
-vector<TString> getSubModes(TString fsCode){
-  setModeCode3Particles();
-  FSModeInfo miFS(fsCode);
-  vector<TString> subModes; subModes.push_back("0_"+miFS.modeString());
+vector<int> getSubModes(FSModeInfo mi){
+  vector<int> subModes; subModes.push_back(0);
   int MAXNCODE3 = 4;
-  int MAXNCODE3SAME = 2;
+  int MAXNCODE3SAME = 3;
   TString sMAX3 = FSString::int2TString(MAXNCODE3SAME);
   TString sMax(""); for (unsigned int i = 0; i < modeCode3Particles.size(); i++){ sMax += sMAX3; }
   vector<TString> modeCode3List = expandIntegers(sMax);
   for (unsigned int i = 0; i < modeCode3List.size(); i++){
     int modeCode3 = FSString::TString2int(modeCode3List[i]);
     if (modeCode3 == 0) continue;
-    if (getParticles(0,0,modeCode3).size() > MAXNCODE3) continue;
-    FSModeInfo mi3(getFSCode(0,0,modeCode3));
+    if (getParticles(FSModeInfo(0,0),modeCode3).size() > MAXNCODE3) continue;
+    FSModeInfo mi3 = addModeCode3(FSModeInfo(0,0),modeCode3);
     if (mi3.modeNParticles() == 0) continue;
-    if (!miFS.modeContains(mi3.modeString())) continue;
-    subModes.push_back(FSString::int2TString(modeCode3)+"_"+
-                       FSString::int2TString(miFS.modeCode2() - mi3.modeCode2())+"_"+
-                       FSString::int2TString(miFS.modeCode1() - mi3.modeCode1()));
+    if (!mi.modeContains(mi3.modeString())) continue;
+    subModes.push_back(modeCode3);
   }
-cout << "SUBMODES:" << endl;
-for (unsigned int i = 0; i < subModes.size(); i++){ cout << subModes[i] << endl; }
+//cout << "SUBMODES:" << endl;
+//for (unsigned int i = 0; i < subModes.size(); i++){ 
+//cout << subModes[i] << " " << addModeCode3(mi,subModes[i],-1).modeString() << endl; }
   return subModes;
 }
 
-
-vector<TString> getMassCombinations(TString subMode){
+vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3){
+  TString subMode = FSString::int2TString(modeCode3) + "_" + mi.modeString();
   vector<TString> massCombosAll = expandIntegers(subMode);
   if (massCombosAll.size() == 0) return massCombosAll;
   vector<TString> massCombos;
   for (unsigned int i = 0; i < massCombosAll.size()-1; i++){
     vector<TString> modeCodes = FSString::parseTString(massCombosAll[i],"_");
     int modeCode1 = FSString::TString2int(modeCodes[2]); 
-    int modeCode2 = FSString::TString2int(modeCodes[1]); 
+    int modeCode2 = FSString::TString2int(modeCodes[1]);
     int modeCode3 = FSString::TString2int(modeCodes[0]); 
-    int n = getParticles(modeCode1,modeCode2,modeCode3).size();
+    FSModeInfo mi(modeCode1,modeCode2); 
+    int n = getParticles(mi,modeCode3).size();
     if (n < 2) continue;
     if (modeCode1 + modeCode2 > 0){
-      FSModeInfo mi(modeCode1,modeCode2);
       if ((mi.modeBaryonNumber() == 1) && (n > 2)) continue;
       if ((mi.modeBaryonNumber() == 1) && (abs(mi.modeCharge()) > 2)) continue;
       if ((mi.modeBaryonNumber() != 1) && (abs(mi.modeCharge()) > 1)) continue;
@@ -260,13 +237,16 @@ vector<TString> getMassCombinations(TString subMode){
 
 
 
-vector<TString> getHistogramList(TString fsCode){
+vector<TString> getHistogramList(FSModeInfo mi){
   vector<TString> histogramList;
-  vector<TString> subModes = getSubModes(fsCode);
+  vector<int> modeCode3s = getSubModes(mi);
   vector<TString> cutCombos = expandIntegers("122");
-  for (unsigned int iS = 0; iS < subModes.size(); iS++){
-    TString histIndexFS = "hist_FS_" + subModes[iS];
-    vector<TString> massCombos = getMassCombinations(subModes[iS]);
+  for (unsigned int iS = 0; iS < modeCode3s.size(); iS++){
+    int modeCode3 = modeCode3s[iS];
+    FSModeInfo mi12 = addModeCode3(mi,modeCode3,-1);
+    TString histIndexFS = "hist_FS_" + FSString::int2TString(modeCode3) 
+                               + "_" + mi12.modeString();
+    vector<TString> massCombos = getMassCombinations(mi12,modeCode3);
     for (unsigned int iC = 0; iC < cutCombos.size(); iC++){
       TString histIndexCUT = "CUTS_" + cutCombos[iC];
       int icutCode = FSString::TString2int(cutCombos[iC]);
@@ -295,24 +275,6 @@ vector<TString> getHistogramList(TString fsCode){
 }
 
 
-TString getTreeNameFromFile(TString fileName){
-  TString treeName("");
-  TFile* inFile = new TFile(fileName);
-  TIter nextkey(inFile->GetListOfKeys());
-  while (TKey* key = (TKey*)nextkey() ){
-    TObject* obj = key->ReadObj();
-    if (obj->IsA()->InheritsFrom("TTree")){
-      TTree* tree = (TTree*)obj;
-      treeName = tree->GetName();
-      cout << "FOUND TREE: " << treeName << endl;
-    }
-  }
-  inFile->Close();
-  delete inFile;
-  if (treeName == ""){ cout << "no tree found in " << fileName << endl; exit(0); }
-  return treeName;
-}
-
 
 TH1F* getTH1F(TString fileName, TString treeName, TString histName){
 cout << "getTH1F:  " << histName << endl;
@@ -330,33 +292,32 @@ cout << "getTH1F:  " << histName << endl;
   if (parts[5] != "CUTS") { cout << "problem with histogram name" << endl; exit(0); }
   TString cutCode = parts[6];
   TString histType = parts[7];
-  TString fsCode = getFSCode(modeCode1,modeCode2,modeCode3);
+  TString fsCode = addModeCode3(FSModeInfo(modeCode1,modeCode2),modeCode3).modeString();
   FSModeCollection::clear();  FSModeCollection::addModeInfo(fsCode);
   TString title("#gamma p^{+} #rightarrow "); 
-  title += FSString::rootSymbols(getDescription(modeCode1,modeCode2,modeCode3));
+  title += FSString::rootSymbols(getDescription(FSModeInfo(modeCode1,modeCode2),modeCode3));
     // get the cuts
   TString CUTS = getSubModeCuts(modeCode3)+"&&"+
-                 getOtherCuts(modeCode1,modeCode2,modeCode3,cutCode,histType);
+                 getOtherCuts(FSModeInfo(modeCode1,modeCode2),modeCode3,cutCode,histType);
     // MASS plots
   if (histType == "MASS"){
     int massModeCode3 = FSString::TString2int(parts[8]);
     int massModeCode2 = FSString::TString2int(parts[9]);
     int massModeCode1 = FSString::TString2int(parts[10]);
-    TString VAR = "MASS("+getComboFormat(massModeCode1,massModeCode2,massModeCode3,modeCode3)+")";
+    TString VAR = "MASS("+getComboFormat(FSModeInfo(massModeCode1,massModeCode2),massModeCode3)+")";
     TString BOUNDS("(350,0.0,3.5)");
     TH1F* hist = FSModeHistogram::getTH1F(FN,NT,CAT,VAR,BOUNDS,CUTS);
     hist->SetTitle(title);
     hist->SetXTitle("Mass(" +
-            FSString::rootSymbols(getDescription(massModeCode1,massModeCode2,massModeCode3))
+            FSString::rootSymbols(getDescription(FSModeInfo(massModeCode1,massModeCode2),massModeCode3))
                             + ")   [GeV]");
     hist->SetYTitle("Entries / 10 MeV");
     return hist;
   }
     // T distribution
   if (histType == "T"){
-    int modeCode1X = modeCode1; int modeCode2X = modeCode2; int modeCode3X = modeCode3;
-    removeRecoilBaryon(modeCode1X,modeCode2X,modeCode3X);
-    TString VAR = "-1*MASS2("+getComboFormat(modeCode1X,modeCode2X,modeCode3X,modeCode3)+";GLUEXBEAM)";
+    FSModeInfo miX = removeRecoilBaryon(FSModeInfo(modeCode1,modeCode2));
+    TString VAR = "-1*MASS2("+getComboFormat(miX,modeCode3)+";GLUEXBEAM)";
     TString BOUNDS("(100,0.0,4.0)");
     TH1F* hist = FSModeHistogram::getTH1F(FN,NT,CAT,VAR,BOUNDS,CUTS);
     hist->SetTitle(title);
@@ -391,9 +352,9 @@ cout << "getTH1F:  " << histName << endl;
 
 void writeHistograms(TString treeFileName, TString histFileName){
   setModeCode3Particles();
-  TString treeName = getTreeNameFromFile(treeFileName);
+  TString treeName = FSTree::getTreeNameFromFile(treeFileName);
   TFile outFile(FSString::TString2string(histFileName).c_str(), "recreate"); outFile.cd();
-  vector<TString> histList = getHistogramList(treeName);
+  vector<TString> histList = getHistogramList(FSModeInfo(treeName));
   for (unsigned int i = 0; i < histList.size(); i++){
     TH1F* hist = getTH1F(treeFileName,treeName,histList[i]);
     outFile.cd();
@@ -429,9 +390,9 @@ TString readHistograms(TString histFileName){
   int modeCode3 = FSString::TString2int(parts[2]);
   int modeCode2 = FSString::TString2int(parts[3]);
   int modeCode1 = FSString::TString2int(parts[4]);
-  TString fsCode = getFSCode(modeCode1, modeCode2, modeCode3);
+  FSModeInfo mi = addModeCode3(FSModeInfo(modeCode1, modeCode2), modeCode3);
     // check all the histogram names
-  vector<TString> histList = getHistogramList(fsCode);
+  vector<TString> histList = getHistogramList(mi);
   if (histNames.size() != histList.size()){ cout << "wrong number of histograms" << endl; exit(0); }
   for (unsigned int i = 0; i < histList.size(); i++){
     bool found = false;
@@ -440,13 +401,17 @@ TString readHistograms(TString histFileName){
     }
     if (!found){ cout << "histogram mismatch" << endl; exit(0); }
   }
-  return fsCode;
+  return mi.modeString();
 }
-
 
 
 pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures){
   TString histIndexFS = "hist_FS_" + subMode;
+  cout << "******************************************************" << endl;
+  cout << "FIGURES FOR " << histIndexFS << endl;
+  cout << "histType = " << histType << endl;
+  cout << "subMode = " << subMode << endl;
+  cout << "******************************************************" << endl;
   TH1F* histAllTAllChi2AllRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_000_"+histType);
   TH1F* histAllTAllChi2SigRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_001_"+histType);
   TH1F* histAllTAllChi2OutRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_002_"+histType);
@@ -634,7 +599,7 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
   TString outputName = baseName;
   TString fsCode = readHistograms(histFileName);
   FSModeInfo miFS(fsCode);
-  TString fsDescription(getDescription(miFS.modeCode1(),miFS.modeCode2(),0));
+  TString fsDescription(getDescription(miFS,0));
   outputDirectory = outputDirectory + "/" + outputName;
   if (FSSystem::getAbsolutePath(outputDirectory,false) != "")
     { cout << "directory already exists: " << outputDirectory << endl; 
@@ -670,16 +635,18 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
     // "  \\item Photon combinations not from a $\\pi^0$ are vetoed if they land in a 50~MeV wide window\n"
     // "    around the $\\pi^0$ mass.\n" 
     " \\end{itemize}\n");
-  vector<TString> subModes = getSubModes(fsCode);
+  vector<int> subModes = getSubModes(miFS);
   for (unsigned int i = 0; i < subModes.size(); i++){
+    FSModeInfo mi = addModeCode3(miFS,subModes[i],-1);
+    TString subMode = FSString::int2TString(subModes[i])+"_"+mi.modeString();
     pair<TString,TString> histInfo;
-    cout << "Making plots for submode: " << getDescription(subModes[i]) << endl;
+    cout << "Making plots for submode: " << getDescription(mi,subModes[i]) << endl;
     FSString::writeTStringToFile(latexFile,
       "\\newpage\n\n"
       "\\section{Histograms for $"+
-      FSString::root2latexSymbols(FSString::rootSymbols(getDescription(subModes[i])))+"$}\n");
+      FSString::root2latexSymbols(FSString::rootSymbols(getDescription(mi,subModes[i])))+"$}\n");
 
-    histInfo = makeFigure(histFileName,subModes[i],"RFTIME",outputFigures);
+    histInfo = makeFigure(histFileName,subMode,"RFTIME",outputFigures);
     FSString::writeTStringToFile(latexFile,
       "\\subsection{RF $\\Delta t$}\n\n"
       "\\begin{figure}[h!]\n"
@@ -689,7 +656,7 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
       "\\caption{"+histInfo.second+"}\n"
       "\\end{figure}\n\n");
 
-    histInfo = makeFigure(histFileName,subModes[i],"CHI2DOF",outputFigures);
+    histInfo = makeFigure(histFileName,subMode,"CHI2DOF",outputFigures);
     FSString::writeTStringToFile(latexFile,
       "\\newpage\n\n"
       "\\subsection{$\\chi^{2}$/dof}\n\n"
@@ -700,7 +667,7 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
       "\\caption{"+histInfo.second+"}\n"
       "\\end{figure}\n\n");
 
-    histInfo = makeFigure(histFileName,subModes[i],"T",outputFigures);
+    histInfo = makeFigure(histFileName,subMode,"T",outputFigures);
     FSString::writeTStringToFile(latexFile,
       "\\newpage\n\n"
       "\\subsection{$-t$}\n\n"
@@ -711,11 +678,15 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
       "\\caption{"+histInfo.second+"}\n"
       "\\end{figure}\n\n");
 
-    vector<TString> massCombinations = getMassCombinations(subModes[i]);
+    vector<TString> massCombinations = getMassCombinations(mi,subModes[i]);
     for (unsigned int j = 0; j < massCombinations.size(); j++){
-      histInfo = makeFigure(histFileName,subModes[i],"MASS_"+massCombinations[j],outputFigures);
+      vector<TString> modeCodes = FSString::parseTString(massCombinations[j],"_");
+      int modeCode1 = FSString::TString2int(modeCodes[2]); 
+      int modeCode2 = FSString::TString2int(modeCodes[1]);
+      int modeCode3 = FSString::TString2int(modeCodes[0]); 
+      histInfo = makeFigure(histFileName,subMode,"MASS_"+massCombinations[j],outputFigures);
       TString title = "Mass($"+
-        FSString::root2latexSymbols(FSString::rootSymbols(getDescription(massCombinations[j])))
+        FSString::root2latexSymbols(FSString::rootSymbols(getDescription(FSModeInfo(modeCode1,modeCode2),modeCode3)))
         +"$)";
       FSString::writeTStringToFile(latexFile,
         "\\newpage\n\n"
