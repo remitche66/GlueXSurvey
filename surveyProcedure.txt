@@ -1,0 +1,63 @@
+
+
+################################################################################
+#  STEP 1:  Flatten analysis trees.
+#             -- uses hd_utilities/FlattenForFSRoot/flatten
+#             -- documentation is in hd_utilities/FlattenForFSRoot/Documentation
+#             -- output is a root file with a flattened TTree (compatible with FSRoot)
+#             -- will exit with no output root file if the final state is not supported
+#             -- run separately over each run and each final state
+################################################################################
+
+time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
+           -chi2 25 \
+           -numUnusedTracks 1 \
+           -numUnusedNeutrals 2 \
+           -shQuality 0.5 \
+           -massWindows 0.05  \
+           -in INPUTDIR/BASENAME.root \
+           -out OUTPUTDIR/BASENAME_flat.root
+
+
+
+################################################################################
+#  STEP 2:  Create histograms.
+#             -- uses GlueXSurvey/surveyFSTreeToHist
+#             -- available in GitHub: https://github.com/remitche66/GlueXSurvey.git
+#             -- depends on FSRoot: https://github.com/remitche66/FSRoot.git
+#             -- output is a histogram file
+#             -- run separately over each run and each final state
+################################################################################
+
+time SOMEPATH/GlueXSurvey/surveyFSTreeToHist \
+        -in INPUTDIR/BASENAME_flat.root \
+        -out OUTPUTDIR/BASENAME_survey.hist
+
+
+
+################################################################################
+#  STEP 3:  Combine histograms with hadd.
+#             -- combine histograms into a single file for each final state
+#             -- the "*" below is a wildcard for all run numbers 
+################################################################################
+
+time SOMEPATH/root/bin/hadd \
+        OUTPUTDIR/BASENAME.hist \
+        INPUTDIR/BASENAME_*_survey.hist
+
+
+
+################################################################################
+#  STEP 4:  Make a PDF file of histograms.
+#             -- uses GlueXSurvey/surveyHistToLatex
+#             -- available in GitHub: https://github.com/remitche66/GlueXSurvey.git
+#             -- depends on FSRoot: https://github.com/remitche66/FSRoot.git
+#             -- also makes a system call to pdflatex
+#             -- run once for each final state
+################################################################################
+
+time SOMEPATH/GlueXSurvey/surveyHistToLatex \
+        -in INPUTDIR/BASENAME.hist \
+        -dir OUTPUTDIR \
+        -name BASENAME
+
