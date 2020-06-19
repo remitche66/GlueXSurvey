@@ -39,7 +39,7 @@ TString getDescription(FSModeInfo mi, int modeCode3);
 TString getComboFormat(FSModeInfo mi, int modeCode3, int offset = 0);
 TString getSubModeCuts(int modeCode3);
 TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode);
-vector<int> getSubModes(FSModeInfo mi);
+vector<int> getModeCode3List(FSModeInfo mi);
 vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3);
 vector<TString> getHistogramList(FSModeInfo mi);
 TH1F* getTH1F(TString fileName, TString treeName, TString histName);

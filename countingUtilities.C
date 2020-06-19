@@ -186,26 +186,26 @@ TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode, TString hist
 }
 
 
-vector<int> getSubModes(FSModeInfo mi){
-  vector<int> subModes; subModes.push_back(0);
+vector<int> getModeCode3List(FSModeInfo mi){
+  vector<int> modeCode3List; modeCode3List.push_back(0);
   int MAXNCODE3 = 4;
   int MAXNCODE3SAME = 3;
   TString sMAX3 = FSString::int2TString(MAXNCODE3SAME);
   TString sMax(""); for (unsigned int i = 0; i < modeCode3Particles.size(); i++){ sMax += sMAX3; }
-  vector<TString> modeCode3List = expandIntegers(sMax);
-  for (unsigned int i = 0; i < modeCode3List.size(); i++){
-    int modeCode3 = FSString::TString2int(modeCode3List[i]);
+  vector<TString> smodeCode3List = expandIntegers(sMax);
+  for (unsigned int i = 0; i < smodeCode3List.size(); i++){
+    int modeCode3 = FSString::TString2int(smodeCode3List[i]);
     if (modeCode3 == 0) continue;
     if (getParticles(FSModeInfo(0,0),modeCode3).size() > MAXNCODE3) continue;
     FSModeInfo mi3 = addModeCode3(FSModeInfo(0,0),modeCode3);
     if (mi3.modeNParticles() == 0) continue;
     if (!mi.modeContains(mi3.modeString())) continue;
-    subModes.push_back(modeCode3);
+    modeCode3List.push_back(modeCode3);
   }
-//cout << "SUBMODES:" << endl;
-//for (unsigned int i = 0; i < subModes.size(); i++){ 
-//cout << subModes[i] << " " << addModeCode3(mi,subModes[i],-1).modeString() << endl; }
-  return subModes;
+//cout << "MODECODE3 LIST:" << endl;
+//for (unsigned int i = 0; i < modeCode3List.size(); i++){ 
+//cout << modeCode3List[i] << " " << addModeCode3(mi,modeCode3List[i],-1).modeString() << endl; }
+  return modeCode3List;
 }
 
 vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3){
@@ -239,7 +239,7 @@ vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3){
 
 vector<TString> getHistogramList(FSModeInfo mi){
   vector<TString> histogramList;
-  vector<int> modeCode3s = getSubModes(mi);
+  vector<int> modeCode3s = getModeCode3List(mi);
   vector<TString> cutCombos = expandIntegers("122");
   for (unsigned int iS = 0; iS < modeCode3s.size(); iS++){
     int modeCode3 = modeCode3s[iS];
@@ -349,10 +349,33 @@ cout << "getTH1F:  " << histName << endl;
 }
 
 
-void setMCComponentsFromTreeFile(TString treeFileName, TString treeName, FSModeInfo mi){
+void setMCComponentsFromTreeFile(TString treeFileName, TString treeName, FSModeInfo miFS){
+  vector<int> modeCode3List = getModeCode3List(miFS);
+  for (unsigned int i = 0; i < modeCode3List.size(); i++){
+    int modeCode3 = modeCode3List[i];
+    FSModeInfo mi = addModeCode3(miFS,modeCode3,-1);
+    TString subMode = FSString::int2TString(modeCode3)+"_"+mi.modeString();
+    TString cutCode = "11";
+    TString FN(treeFileName);
+    TString NT(treeName);
+    TString CAT("");
+    TString VAR("1.234");
+    TString BOUNDS("(10,0.0,2.0)");
+    TString CUTS = getSubModeCuts(modeCode3)+"&&"+
+                   getOtherCuts(mi,modeCode3,cutCode,"");
+    FSModeCollection::clear();  FSModeCollection::addModeInfo(miFS.modeString());
+    vector< pair<TString, float> > components = 
+        FSModeHistogram::getMCComponentsAndSizes(FN,NT,CAT,VAR,BOUNDS,CUTS);
+  }
 }
 
-void setMCComponentsFromHistFile(TString histFileName, FSModeInfo mi){
+void setMCComponentsFromHistFile(TString histFileName, FSModeInfo miFS){
+  vector<int> modeCode3List = getModeCode3List(miFS);
+  for (unsigned int i = 0; i < modeCode3List.size(); i++){
+    int modeCode3 = modeCode3List[i];
+    FSModeInfo mi = addModeCode3(miFS,modeCode3,-1);
+    TString subMode = FSString::int2TString(modeCode3)+"_"+mi.modeString();
+  }
 }
 
 void writeHistograms(TString treeFileName, TString histFileName){
@@ -640,16 +663,16 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
     // "  \\item Photon combinations not from a $\\pi^0$ are vetoed if they land in a 50~MeV wide window\n"
     // "    around the $\\pi^0$ mass.\n" 
     " \\end{itemize}\n");
-  vector<int> subModes = getSubModes(miFS);
-  for (unsigned int i = 0; i < subModes.size(); i++){
-    FSModeInfo mi = addModeCode3(miFS,subModes[i],-1);
-    TString subMode = FSString::int2TString(subModes[i])+"_"+mi.modeString();
+  vector<int> modeCode3List = getModeCode3List(miFS);
+  for (unsigned int i = 0; i < modeCode3List.size(); i++){
+    FSModeInfo mi = addModeCode3(miFS,modeCode3List[i],-1);
+    TString subMode = FSString::int2TString(modeCode3List[i])+"_"+mi.modeString();
     pair<TString,TString> histInfo;
-    cout << "Making plots for submode: " << getDescription(mi,subModes[i]) << endl;
+    cout << "Making plots for submode: " << getDescription(mi,modeCode3List[i]) << endl;
     FSString::writeTStringToFile(latexFile,
       "\\newpage\n\n"
       "\\section{Histograms for $"+
-      FSString::root2latexSymbols(FSString::rootSymbols(getDescription(mi,subModes[i])))+"$}\n");
+      FSString::root2latexSymbols(FSString::rootSymbols(getDescription(mi,modeCode3List[i])))+"$}\n");
 
     histInfo = makeFigure(histFileName,subMode,"RFTIME",outputFigures);
     FSString::writeTStringToFile(latexFile,
@@ -683,7 +706,7 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
       "\\caption{"+histInfo.second+"}\n"
       "\\end{figure}\n\n");
 
-    vector<TString> massCombinations = getMassCombinations(mi,subModes[i]);
+    vector<TString> massCombinations = getMassCombinations(mi,modeCode3List[i]);
     for (unsigned int j = 0; j < massCombinations.size(); j++){
       vector<TString> modeCodes = FSString::parseTString(massCombinations[j],"_");
       int modeCode1 = FSString::TString2int(modeCodes[2]); 
