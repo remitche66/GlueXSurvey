@@ -2,8 +2,10 @@
 
 vector<ModeCode3Particle> modeCode3Particles;
 map<TString,int> particleOrder;
+map< TString, vector<TString> > mcComponentsMap;  // map from submode to list of mc components
 
-void setModeCode3Particles(){
+
+void setModeCode3ParticlesEtc(){
   if (modeCode3Particles.size() > 0) return;
   FSControl::globalTweaks();
   ModeCode3Particle eta3pi; 
@@ -60,7 +62,7 @@ void setModeCode3Particles(){
 }
 
 vector<int> getModeCode3Numbers(int modeCode3){
-  setModeCode3Particles();
+  setModeCode3ParticlesEtc();
   vector<int> numbers;
   int n1 = 1; int n2 = 10;
   for (unsigned int iP = 0; iP < modeCode3Particles.size(); iP++){
@@ -185,6 +187,16 @@ TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode, TString hist
   return cuts;
 }
 
+TString getMCCuts(TString mcComponent){
+  TString mcCuts("");
+  if (mcComponent == "0_0_0") return TString("(1==1)");
+  vector<TString> parts = FSString::parseTString(mcComponent,"_");
+  if (parts.size() != 3){ cout << "mc component problem, quitting" << endl; exit(0); }
+  mcCuts +=   "((MCDecayCode1==";  mcCuts += parts[2];
+  mcCuts += ")&&(MCDecayCode2==";  mcCuts += parts[1];
+  mcCuts += ")&&(MCExtras==";      mcCuts += parts[0];  mcCuts += "))";
+  return mcCuts;
+}
 
 vector<int> getModeCode3List(FSModeInfo mi){
   vector<int> modeCode3List; modeCode3List.push_back(0);
@@ -237,36 +249,44 @@ vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3){
 
 
 
-vector<TString> getHistogramList(FSModeInfo mi){
+vector<TString> getHistogramList(FSModeInfo miFS){
   vector<TString> histogramList;
-  vector<int> modeCode3s = getModeCode3List(mi);
+  vector<int> modeCode3List = getModeCode3List(miFS);
   vector<TString> cutCombos = expandIntegers("122");
-  for (unsigned int iS = 0; iS < modeCode3s.size(); iS++){
-    int modeCode3 = modeCode3s[iS];
-    FSModeInfo mi12 = addModeCode3(mi,modeCode3,-1);
-    TString histIndexFS = "hist_FS_" + FSString::int2TString(modeCode3) 
-                               + "_" + mi12.modeString();
-    vector<TString> massCombos = getMassCombinations(mi12,modeCode3);
-    for (unsigned int iC = 0; iC < cutCombos.size(); iC++){
-      TString histIndexCUT = "CUTS_" + cutCombos[iC];
-      int icutCode = FSString::TString2int(cutCombos[iC]);
-      int iT      = (((icutCode%1000)-(icutCode%100))/100);
-      int iCHI2   = (((icutCode%100)-(icutCode%10))/10);
-      int iRFTIME = (((icutCode%10)-(icutCode%1))/1);
-        // ** MASS **
-      if (iCHI2 != 0 && iRFTIME != 0){
-        for (unsigned int iM = 0; iM < massCombos.size(); iM++){
-          TString histIndexMASS = "MASS_" + massCombos[iM];
-          histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_"+histIndexMASS);
+  for (unsigned int i3 = 0; i3 < modeCode3List.size(); i3++){
+    int modeCode3 = modeCode3List[i3];
+    FSModeInfo mi = addModeCode3(miFS,modeCode3,-1);
+    TString subMode = FSString::int2TString(modeCode3)+"_"+mi.modeString();
+    vector<TString> mcComponents;  mcComponents.push_back("0_0_0");
+    if (mcComponentsMap.find(subMode) != mcComponentsMap.end()){
+      vector<TString> tempComponents = mcComponentsMap[subMode];
+      for (unsigned int itmp = 0; itmp < tempComponents.size(); itmp++){
+        mcComponents.push_back(tempComponents[itmp]); }
+    }
+    vector<TString> massCombos = getMassCombinations(mi,modeCode3);
+    for (unsigned int iMC = 0; iMC < mcComponents.size(); iMC++){
+      TString histIndexFS = "hist_FS_" + subMode + "_MC_" + mcComponents[iMC];
+      for (unsigned int iC = 0; iC < cutCombos.size(); iC++){
+        TString histIndexCUT = "CUTS_" + cutCombos[iC];
+        int icutCode = FSString::TString2int(cutCombos[iC]);
+        int iT      = (((icutCode%1000)-(icutCode%100))/100);
+        int iCHI2   = (((icutCode%100)-(icutCode%10))/10);
+        int iRFTIME = (((icutCode%10)-(icutCode%1))/1);
+          // ** MASS **
+        if (iCHI2 != 0 && iRFTIME != 0){
+          for (unsigned int iM = 0; iM < massCombos.size(); iM++){
+            TString histIndexMASS = "MASS_" + massCombos[iM];
+            histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_"+histIndexMASS);
+          }
         }
+          // ** OTHERS **
+        if (iCHI2 == 0 && iRFTIME != 0)
+          histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_CHI2DOF");
+        if (iCHI2 != 0 && iRFTIME != 0) 
+          histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_T");
+        if (iCHI2 != 0 && iRFTIME == 0) 
+          histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_RFTIME");
       }
-        // ** OTHERS **
-      if (iCHI2 == 0 && iRFTIME != 0)
-        histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_CHI2DOF");
-      if (iCHI2 != 0 && iRFTIME != 0) 
-        histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_T");
-      if (iCHI2 != 0 && iRFTIME == 0) 
-        histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_RFTIME");
     }
   }
 //cout << "histogramList:" << endl;
@@ -284,26 +304,31 @@ cout << "getTH1F:  " << histName << endl;
   TString CAT("");
     // parse the histogram name
   vector<TString> parts = FSString::parseTString(histName,"_");
+  if (parts.size() < 12)  { cout << "problem with histogram name" << endl; exit(0); }
   if (parts[0] != "hist") { cout << "problem with histogram name" << endl; exit(0); }
   if (parts[1] != "FS")   { cout << "problem with histogram name" << endl; exit(0); }
   int modeCode3 = FSString::TString2int(parts[2]);
   int modeCode2 = FSString::TString2int(parts[3]);
   int modeCode1 = FSString::TString2int(parts[4]);
-  if (parts[5] != "CUTS") { cout << "problem with histogram name" << endl; exit(0); }
-  TString cutCode = parts[6];
-  TString histType = parts[7];
+  if (parts[5] != "MC")   { cout << "problem with histogram name" << endl; exit(0); }
+  TString mcComponent = parts[6] + "_" + parts[7] + "_" + parts[8];
+  if (parts[9] != "CUTS") { cout << "problem with histogram name" << endl; exit(0); }
+  TString cutCode = parts[10];
+  TString histType = parts[11];
   TString fsCode = addModeCode3(FSModeInfo(modeCode1,modeCode2),modeCode3).modeString();
   FSModeCollection::clear();  FSModeCollection::addModeInfo(fsCode);
   TString title("#gamma p^{+} #rightarrow "); 
   title += FSString::rootSymbols(getDescription(FSModeInfo(modeCode1,modeCode2),modeCode3));
     // get the cuts
   TString CUTS = getSubModeCuts(modeCode3)+"&&"+
-                 getOtherCuts(FSModeInfo(modeCode1,modeCode2),modeCode3,cutCode,histType);
+                 getOtherCuts(FSModeInfo(modeCode1,modeCode2),modeCode3,cutCode,histType)+"&&"+
+                 getMCCuts(mcComponent);
     // MASS plots
   if (histType == "MASS"){
-    int massModeCode3 = FSString::TString2int(parts[8]);
-    int massModeCode2 = FSString::TString2int(parts[9]);
-    int massModeCode1 = FSString::TString2int(parts[10]);
+    if (parts.size() < 15)  { cout << "problem with histogram name" << endl; exit(0); }
+    int massModeCode3 = FSString::TString2int(parts[12]);
+    int massModeCode2 = FSString::TString2int(parts[13]);
+    int massModeCode1 = FSString::TString2int(parts[14]);
     TString VAR = "MASS("+getComboFormat(FSModeInfo(massModeCode1,massModeCode2),massModeCode3)+")";
     TString BOUNDS("(350,0.0,3.5)");
     TH1F* hist = FSModeHistogram::getTH1F(FN,NT,CAT,VAR,BOUNDS,CUTS);
@@ -349,23 +374,44 @@ cout << "getTH1F:  " << histName << endl;
 }
 
 
-void setMCComponentsFromTreeFile(TString treeFileName, TString treeName, FSModeInfo miFS){
+void setMCComponentsFromTreeFile(TString treeFileName){
+  mcComponentsMap.clear();
+  TString FN(treeFileName);
+  TString NT(FSTree::getTreeNameFromFile(FN));
+  if (FSTree::getBranchNamesFromTree(FN,NT,"MCDecayCode1").size() == 0) return;
+  FSModeInfo miFS(NT);
+  TString CAT(""); 
+  TString VAR("2.0");
+  TString BOUNDS("(10,0.0,4.0)");
+  FSModeCollection::clear();
+  FSModeCollection::addModeInfo(miFS.modeString());
   vector<int> modeCode3List = getModeCode3List(miFS);
   for (unsigned int i = 0; i < modeCode3List.size(); i++){
     int modeCode3 = modeCode3List[i];
     FSModeInfo mi = addModeCode3(miFS,modeCode3,-1);
     TString subMode = FSString::int2TString(modeCode3)+"_"+mi.modeString();
     TString cutCode = "11";
-    TString FN(treeFileName);
-    TString NT(treeName);
-    TString CAT("");
-    TString VAR("1.234");
-    TString BOUNDS("(10,0.0,2.0)");
     TString CUTS = getSubModeCuts(modeCode3)+"&&"+
                    getOtherCuts(mi,modeCode3,cutCode,"");
-    FSModeCollection::clear();  FSModeCollection::addModeInfo(miFS.modeString());
-    vector< pair<TString, float> > components = 
-        FSModeHistogram::getMCComponentsAndSizes(FN,NT,CAT,VAR,BOUNDS,CUTS);
+    cout << "*****************************************************\n"
+         << " SETTING MC COMPONENTS FOR SUBMODE = " << getDescription(mi,modeCode3) << "\n"
+         << "*****************************************************" << endl;
+    vector< pair<TString, float> > mcComponents = 
+        FSModeHistogram::getMCComponentsAndSizes(FN,NT,CAT,VAR,BOUNDS,CUTS,1.0,false,true);
+    cout << "*****************************************************\n"
+         << " SELECTING MC COMPONENTS FOR SUBMODE = " << getDescription(mi,modeCode3) << "\n"
+         << "*****************************************************" << endl;
+    vector<TString> selectedComponents;
+    for (unsigned int j = 0; j < mcComponents.size(); j++){
+      if (mcComponents[j].second*100 > 0.05){
+        selectedComponents.push_back(mcComponents[j].first); 
+        cout << FSModeHistogram::formatMCComponent(mcComponents[j].first,mcComponents[j].second) << endl;
+      }
+    }
+    mcComponentsMap[subMode] = selectedComponents;
+    cout << "*****************************************************\n"
+         << " DONE SETTING MC COMPONENTS FOR SUBMODE = " << getDescription(mi,modeCode3) << "\n"
+         << "*****************************************************" << endl;
   }
 }
 
@@ -379,7 +425,8 @@ void setMCComponentsFromHistFile(TString histFileName, FSModeInfo miFS){
 }
 
 void writeHistograms(TString treeFileName, TString histFileName){
-  setModeCode3Particles();
+  setModeCode3ParticlesEtc();
+  setMCComponentsFromTreeFile(treeFileName);
   TString treeName = FSTree::getTreeNameFromFile(treeFileName);
   TFile outFile(FSString::TString2string(histFileName).c_str(), "recreate"); outFile.cd();
   vector<TString> histList = getHistogramList(FSModeInfo(treeName));
@@ -394,7 +441,7 @@ void writeHistograms(TString treeFileName, TString histFileName){
 
 
 TString readHistograms(TString histFileName){
-  setModeCode3Particles();
+  setModeCode3ParticlesEtc();
   vector<TString> histNames;
   TFile* inFile = new TFile(histFileName);
   TIter nextkey(inFile->GetListOfKeys());
