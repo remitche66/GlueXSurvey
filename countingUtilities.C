@@ -349,6 +349,11 @@ cout << "getTH1F:  " << histName << endl;
 }
 
 
+void setMCComponentsFromTreeFile(TString treeFileName, TString treeName, FSModeInfo mi){
+}
+
+void setMCComponentsFromHistFile(TString histFileName, FSModeInfo mi){
+}
 
 void writeHistograms(TString treeFileName, TString histFileName){
   setModeCode3Particles();

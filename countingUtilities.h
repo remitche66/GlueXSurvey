@@ -43,6 +43,8 @@ vector<int> getSubModes(FSModeInfo mi);
 vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3);
 vector<TString> getHistogramList(FSModeInfo mi);
 TH1F* getTH1F(TString fileName, TString treeName, TString histName);
+void setMCComponentsFromTreeFile(TString treeFileName, TString treeName, FSModeInfo mi);
+void setMCComponentsFromHistFile(TString histFileName, FSModeInfo mi);
 void writeHistograms(TString treeFileName, TString histFileName);
 TString readHistograms(TString histFileName);
 pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures);
