@@ -461,10 +461,22 @@ pair<THStack*,TLegend*> getTHStFromHistFile(TString histFileName, TString histNa
   }
   THStack* stack = new THStack("sDrawMCComponents","sDrawMCComponents");
   TLegend* legend = new TLegend(0.7,0.5,1.0,1.0);
+  int iCol = 2;
   for (unsigned int i = 0; i < histograms.size(); i++){
+    if (i == iSignal) continue;
     TH1F* hcomp = histograms[i];
-    if (i != 0) hcomp->SetFillColor(i+1);
-    hcomp->SetLineColor(i+1);
+    hcomp->SetFillColor(iCol);
+    hcomp->SetLineColor(iCol++);
+    stack->Add(hcomp,"hist");
+    TString legendString("");
+    legendString +=
+      FSString::rootSymbols(FSModeHistogram::formatMCComponent(mcComponents[i],fractions[i]));
+    legend->AddEntry(hcomp,legendString,"F");
+  }
+  if (iSignal >= 0){
+    int i = iSignal;
+    TH1F* hcomp = histograms[i];
+    hcomp->SetLineColor(1);
     stack->Add(hcomp,"hist");
     TString legendString("");
     legendString +=
@@ -563,7 +575,8 @@ void setMCComponentsFromHistFile(TString histFileName){
     vector<TString> mcComponents;
     for (unsigned int j = 0; j < mcComponents1.size(); j++){
       cout << FSModeHistogram::formatMCComponent(mcComponents1[j].first,mcComponents1[j].second) << endl;
-      if (mcComponents1[j].second*100 > 0.1) mcComponents.push_back(mcComponents1[j].first);
+      if ((mcComponents1[j].second*100 > 0.1) && (j < 8)) 
+        mcComponents.push_back(mcComponents1[j].first);
     }
     mcComponentsMap[subMode] = mcComponents;
     cout << "*****************************************************\n"
