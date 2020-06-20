@@ -1,9 +1,27 @@
 #include "countingUtilities.h"
 
+// some conventions:
+//  modeCode3 (integer) = code for extra decaying particles, e.g. phi, omega, eta+-0
+//  subMode (TString) = modeCode3_modeCode2_modeCode1
+//  mcComponent (TString) = MCExtras_MCDecayCode2_MCDecayCode1
+
+  // global
 vector<ModeCode3Particle> modeCode3Particles;
 map<TString,int> particleOrder;
-map< TString, vector<TString> > mcComponentsMap;  // map from submode to list of mc components
 
+  // global map from submode to list of mc components
+map< TString, vector<TString> > mcComponentsMap; 
+
+  // global map from hist files to fs codes (to save time)
+map< TString, TString > histFileNameToFSCodeMap;
+
+// not important -- just for cleaning up memory
+vector<TH1F*> memCache;
+void clearMemCache(){ 
+  for (unsigned int i = 0; i < memCache.size(); i++){
+    if (memCache[i]) delete memCache[i]; 
+  } memCache.clear(); 
+}
 
 void setModeCode3ParticlesEtc(){
   if (modeCode3Particles.size() > 0) return;
@@ -189,7 +207,7 @@ TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode, TString hist
 
 TString getMCCuts(TString mcComponent){
   TString mcCuts("");
-  if (mcComponent == "0_0_0") return TString("(1==1)");
+  if ((mcComponent == "0_0_0") || (mcComponent == "")) return TString("(1==1)");
   vector<TString> parts = FSString::parseTString(mcComponent,"_");
   if (parts.size() != 3){ cout << "mc component problem, quitting" << endl; exit(0); }
   mcCuts +=   "((MCDecayCode1==";  mcCuts += parts[2];
@@ -198,13 +216,14 @@ TString getMCCuts(TString mcComponent){
   return mcCuts;
 }
 
-vector<int> getModeCode3List(FSModeInfo mi){
+vector<int> getModeCode3List(FSModeInfo mi, bool show){
+  setModeCode3ParticlesEtc();
   vector<int> modeCode3List; modeCode3List.push_back(0);
   int MAXNCODE3 = 4;
   int MAXNCODE3SAME = 3;
   TString sMAX3 = FSString::int2TString(MAXNCODE3SAME);
   TString sMax(""); for (unsigned int i = 0; i < modeCode3Particles.size(); i++){ sMax += sMAX3; }
-  vector<TString> smodeCode3List = expandIntegers(sMax);
+  vector<TString> smodeCode3List = FSString::expandIntegers(sMax);
   for (unsigned int i = 0; i < smodeCode3List.size(); i++){
     int modeCode3 = FSString::TString2int(smodeCode3List[i]);
     if (modeCode3 == 0) continue;
@@ -214,15 +233,17 @@ vector<int> getModeCode3List(FSModeInfo mi){
     if (!mi.modeContains(mi3.modeString())) continue;
     modeCode3List.push_back(modeCode3);
   }
-//cout << "MODECODE3 LIST:" << endl;
-//for (unsigned int i = 0; i < modeCode3List.size(); i++){ 
-//cout << modeCode3List[i] << " " << addModeCode3(mi,modeCode3List[i],-1).modeString() << endl; }
+  if (show){
+    cout << "MODECODE3 LIST:" << endl;
+    for (unsigned int i = 0; i < modeCode3List.size(); i++){ 
+    cout << modeCode3List[i] << " " << addModeCode3(mi,modeCode3List[i],-1).modeString() << endl; }
+  }
   return modeCode3List;
 }
 
-vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3){
+vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3, bool show){
   TString subMode = FSString::int2TString(modeCode3) + "_" + mi.modeString();
-  vector<TString> massCombosAll = expandIntegers(subMode);
+  vector<TString> massCombosAll = FSString::expandIntegers(subMode);
   if (massCombosAll.size() == 0) return massCombosAll;
   vector<TString> massCombos;
   for (unsigned int i = 0; i < massCombosAll.size()-1; i++){
@@ -242,30 +263,36 @@ vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3){
                         +FSString::int2TString(modeCode2)+"_"
                         +FSString::int2TString(modeCode1));
   }
-//cout << "massCombos:" << endl;
-//for (unsigned int i = 0; i < massCombos.size(); i++){ cout << massCombos[i] << endl; }
+  if (show){
+    cout << "massCombos:" << endl;
+    for (unsigned int i = 0; i < massCombos.size(); i++){ cout << massCombos[i] << endl; }
+  }
   return massCombos;
 }
 
 
 
-vector<TString> getHistogramList(FSModeInfo miFS){
+vector<TString> getHistogramList(FSModeInfo miFS, bool isMC, bool show){
   vector<TString> histogramList;
   vector<int> modeCode3List = getModeCode3List(miFS);
-  vector<TString> cutCombos = expandIntegers("122");
+  vector<TString> cutCombos = FSString::expandIntegers("122");
   for (unsigned int i3 = 0; i3 < modeCode3List.size(); i3++){
     int modeCode3 = modeCode3List[i3];
     FSModeInfo mi = addModeCode3(miFS,modeCode3,-1);
     TString subMode = FSString::int2TString(modeCode3)+"_"+mi.modeString();
-    vector<TString> mcComponents;  mcComponents.push_back("0_0_0");
-    if (mcComponentsMap.find(subMode) != mcComponentsMap.end()){
-      vector<TString> tempComponents = mcComponentsMap[subMode];
-      for (unsigned int itmp = 0; itmp < tempComponents.size(); itmp++){
-        mcComponents.push_back(tempComponents[itmp]); }
+    vector<TString> mcComponents;
+    mcComponents.push_back("0_0_0");
+    if (isMC){
+      if (mcComponentsMap.find(subMode) != mcComponentsMap.end()){
+        vector<TString> tempComponents = mcComponentsMap[subMode];
+        for (unsigned int itmp = 0; itmp < tempComponents.size(); itmp++){
+          mcComponents.push_back(tempComponents[itmp]); }
+      }
     }
     vector<TString> massCombos = getMassCombinations(mi,modeCode3);
     for (unsigned int iMC = 0; iMC < mcComponents.size(); iMC++){
-      TString histIndexFS = "hist_FS_" + subMode + "_MC_" + mcComponents[iMC];
+      TString histIndexFS = "hist_FS_" + subMode;
+      if (isMC) histIndexFS += ("_MC_" + mcComponents[iMC]);
       for (unsigned int iC = 0; iC < cutCombos.size(); iC++){
         TString histIndexCUT = "CUTS_" + cutCombos[iC];
         int icutCode = FSString::TString2int(cutCombos[iC]);
@@ -289,32 +316,35 @@ vector<TString> getHistogramList(FSModeInfo miFS){
       }
     }
   }
-//cout << "histogramList:" << endl;
-//for (unsigned int i = 0; i < histogramList.size(); i++){ cout << histogramList[i] << endl; }
+  if (show){
+    cout << "histogramList:" << endl;
+    for (unsigned int i = 0; i < histogramList.size(); i++){ cout << histogramList[i] << endl; }
+  }
   return histogramList;
 }
 
 
 
-TH1F* getTH1F(TString fileName, TString treeName, TString histName){
-cout << "getTH1F:  " << histName << endl;
+TH1F* getTH1FFromTreeFile(TString fileName, TString treeName, TString histName){
+  bool isMC = histName.Contains("_MC_"); int iMC = 0; if (isMC) iMC = 4;
     // set up initial variables
   TString FN(fileName);
   TString NT(treeName);
   TString CAT("");
     // parse the histogram name
   vector<TString> parts = FSString::parseTString(histName,"_");
-  if (parts.size() < 12)  { cout << "problem with histogram name" << endl; exit(0); }
-  if (parts[0] != "hist") { cout << "problem with histogram name" << endl; exit(0); }
-  if (parts[1] != "FS")   { cout << "problem with histogram name" << endl; exit(0); }
+  if (parts.size() < 8+iMC){ cout << "problem with histogram name" << endl; exit(0); }
+  if (parts[0] != "hist")  { cout << "problem with histogram name" << endl; exit(0); }
+  if (parts[1] != "FS")    { cout << "problem with histogram name" << endl; exit(0); }
   int modeCode3 = FSString::TString2int(parts[2]);
   int modeCode2 = FSString::TString2int(parts[3]);
   int modeCode1 = FSString::TString2int(parts[4]);
-  if (parts[5] != "MC")   { cout << "problem with histogram name" << endl; exit(0); }
-  TString mcComponent = parts[6] + "_" + parts[7] + "_" + parts[8];
-  if (parts[9] != "CUTS") { cout << "problem with histogram name" << endl; exit(0); }
-  TString cutCode = parts[10];
-  TString histType = parts[11];
+  if (isMC && parts[5] != "MC")   { cout << "problem with histogram name" << endl; exit(0); }
+  TString mcComponent("");
+  if (isMC) mcComponent = parts[6] + "_" + parts[7] + "_" + parts[8];
+  if (parts[5+iMC] != "CUTS") { cout << "problem with histogram name" << endl; exit(0); }
+  TString cutCode = parts[6+iMC];
+  TString histType = parts[7+iMC];
   TString fsCode = addModeCode3(FSModeInfo(modeCode1,modeCode2),modeCode3).modeString();
   FSModeCollection::clear();  FSModeCollection::addModeInfo(fsCode);
   TString title("#gamma p^{+} #rightarrow "); 
@@ -325,10 +355,10 @@ cout << "getTH1F:  " << histName << endl;
                  getMCCuts(mcComponent);
     // MASS plots
   if (histType == "MASS"){
-    if (parts.size() < 15)  { cout << "problem with histogram name" << endl; exit(0); }
-    int massModeCode3 = FSString::TString2int(parts[12]);
-    int massModeCode2 = FSString::TString2int(parts[13]);
-    int massModeCode1 = FSString::TString2int(parts[14]);
+    if (parts.size() < 11+iMC)  { cout << "problem with histogram name" << endl; exit(0); }
+    int massModeCode3 = FSString::TString2int(parts[8+iMC]);
+    int massModeCode2 = FSString::TString2int(parts[9+iMC]);
+    int massModeCode1 = FSString::TString2int(parts[10+iMC]);
     TString VAR = "MASS("+getComboFormat(FSModeInfo(massModeCode1,massModeCode2),massModeCode3)+")";
     TString BOUNDS("(350,0.0,3.5)");
     TH1F* hist = FSModeHistogram::getTH1F(FN,NT,CAT,VAR,BOUNDS,CUTS);
@@ -374,12 +404,85 @@ cout << "getTH1F:  " << histName << endl;
 }
 
 
+TH1F* getTH1FFromHistFile(TString histFileName, TString histName){
+  bool isMC = histName.Contains("_MC_"); int iMC = 0; if (isMC) iMC = 4;
+  vector<TString> parts = FSString::parseTString(histName,"_");
+  if (parts[5+iMC] != "CUTS") { cout << "problem with histogram name" << endl; exit(0); }
+  TString cutCode = "CUTS_"+parts[6+iMC];
+  if (cutCode.Length() != 8){ cout << "problem with histogram name" << endl; exit(0); }
+  if (FSString::subString(cutCode,7,8) != "S"){
+    TH1F* hist = (TH1F*)FSHistogram::getTH1F(histFileName,histName)->Clone();
+    memCache.push_back(hist);
+    return hist;
+  }
+  TString cutCodeSig(cutCode);  cutCodeSig.Replace(7,1,"1");
+  TString cutCodeOut(cutCode);  cutCodeOut.Replace(7,1,"2");
+  TString histNameSig(histName); histNameSig.Replace(histName.Index(cutCode),8,cutCodeSig);
+  TString histNameOut(histName); histNameOut.Replace(histName.Index(cutCode),8,cutCodeOut);
+  TH1F* hsig = (TH1F*)FSHistogram::getTH1F(histFileName,histNameSig)->Clone();
+  TH1F* hout = (TH1F*)FSHistogram::getTH1F(histFileName,histNameOut)->Clone();
+  TH1F* hsub = new TH1F(*hsig);  hsub->Add(hout,-1.0);  
+  hsub->SetMinimum(-0.05*hsub->GetMaximum());
+  memCache.push_back(hsig);
+  memCache.push_back(hout);
+  memCache.push_back(hsub);
+  return hsub;
+}
+
+pair<THStack*,TLegend*> getTHStFromHistFile(TString histFileName, TString histName){
+  bool isMC = histName.Contains("_MC_"); if (!isMC){ cout << "not MC" << endl; exit(0); }
+  setModeCode3ParticlesEtc();
+  setMCComponentsFromHistFile(histFileName);
+  vector<TString> keys; keys.push_back("_FS_"); keys.push_back("_MC_"); keys.push_back("_CUTS_");
+  map<TString,TString> parseMap = FSString::parseTStringToMap1(histName,keys);
+  TString subMode = parseMap["_FS_"];
+  vector<TString> subModeParts = FSString::parseTString(subMode,"_");
+  if (subModeParts.size() != 3){ cout << "histName problem" << endl; exit(0); }
+  if (!histName.Contains("_MC_0_0_0_")){ cout << "histName problem" << endl; exit(0); }
+  int modeCode3 = FSString::TString2int(subModeParts[0]);
+  FSModeInfo mi(subMode);
+  FSModeInfo miFS = addModeCode3(mi,modeCode3);
+  if (mcComponentsMap.find(subMode) == mcComponentsMap.end()){ cout << "problem " << subMode << endl; exit(0); }
+  TH1F* hTot = getTH1FFromHistFile(histFileName,histName);
+  double nTot = hTot->Integral(1,hTot->GetNbinsX());
+  if (nTot <= 0.0){ nTot = 1.0; }
+  vector<TString> mcComponents = mcComponentsMap[subMode];
+  vector<TH1F*> histograms;
+  vector<double> fractions;
+  int iSignal = -1;
+  for (unsigned int i = 0; i < mcComponents.size(); i++){
+    TString histNameI = histName;
+    histNameI.Replace(histNameI.Index("_MC_0_0_0_")+4,5,mcComponents[i]);
+    TH1F* histI = getTH1FFromHistFile(histFileName,histNameI);
+    double nI = histI->Integral(1,histI->GetNbinsX());
+    histograms.push_back(histI);
+    fractions.push_back(nI/nTot);
+    if (mcComponents[i] == "0_"+miFS.modeString()) iSignal = i;
+  }
+  THStack* stack = new THStack("sDrawMCComponents","sDrawMCComponents");
+  TLegend* legend = new TLegend(0.7,0.5,1.0,1.0);
+  for (unsigned int i = 0; i < histograms.size(); i++){
+    TH1F* hcomp = histograms[i];
+    if (i != 0) hcomp->SetFillColor(i+1);
+    hcomp->SetLineColor(i+1);
+    stack->Add(hcomp,"hist");
+    TString legendString("");
+    legendString +=
+      FSString::rootSymbols(FSModeHistogram::formatMCComponent(mcComponents[i],fractions[i]));
+    legend->AddEntry(hcomp,legendString,"F");
+  }
+  return pair<THStack*,TLegend*>(stack,legend);
+}
+
+
 void setMCComponentsFromTreeFile(TString treeFileName){
-  mcComponentsMap.clear();
+  setModeCode3ParticlesEtc();
   TString FN(treeFileName);
   TString NT(FSTree::getTreeNameFromFile(FN));
   if (FSTree::getBranchNamesFromTree(FN,NT,"MCDecayCode1").size() == 0) return;
   FSModeInfo miFS(NT);
+  TString subMode0 = "0_"+miFS.modeString();
+  if (mcComponentsMap.find(subMode0) != mcComponentsMap.end()) return;
   TString CAT(""); 
   TString VAR("2.0");
   TString BOUNDS("(10,0.0,4.0)");
@@ -415,23 +518,70 @@ void setMCComponentsFromTreeFile(TString treeFileName){
   }
 }
 
-void setMCComponentsFromHistFile(TString histFileName, FSModeInfo miFS){
+void setMCComponentsFromHistFile(TString histFileName){
+  setModeCode3ParticlesEtc();
+  TString fsCode = fsCodeFromHistFile(histFileName);
+  TString subMode0 = "0_"+fsCode;
+  if (mcComponentsMap.find(subMode0) != mcComponentsMap.end()) return;
+  if (!isMCFromHistFile(histFileName)) {cout << "not mc" << endl; exit(0);}
+  vector<TString> keys; keys.push_back("_FS_"); keys.push_back("_MC_"); keys.push_back("_CUTS_");
+  FSModeInfo miFS(fsCode);
   vector<int> modeCode3List = getModeCode3List(miFS);
   for (unsigned int i = 0; i < modeCode3List.size(); i++){
     int modeCode3 = modeCode3List[i];
     FSModeInfo mi = addModeCode3(miFS,modeCode3,-1);
     TString subMode = FSString::int2TString(modeCode3)+"_"+mi.modeString();
+    cout << "*****************************************************\n"
+         << " SETTING MC COMPONENTS FOR SUBMODE = " << getDescription(mi,modeCode3) << "\n"
+         << "*****************************************************" << endl;
+    vector< pair<TString,float> > mcComponents1;
+    TH1F* hTot = FSHistogram::getTH1F(histFileName,"hist_FS_"+subMode+"_MC_0_0_0_CUTS_011_T");
+    if (!hTot){ cout << "histogram problem" << endl; exit(0); }
+    double nTot = hTot->GetEntries();
+    cout << "TOTAL ENTRIES = " << nTot << endl; 
+    if (nTot <= 0.0){ nTot = 1.0; }
+    vector<TString> histograms = FSTree::getTObjNamesFromFile(histFileName,"TH1F","hist_FS_"+subMode+"_MC_*_CUTS_011_T");
+    if (histograms.size() == 0){ cout << "histogram problem" << endl; exit(0); }
+    for (unsigned int j = 0; j < histograms.size(); j++){
+      map<TString,TString> parseMap = FSString::parseTStringToMap1(histograms[j],keys);
+      TString mcComponent = parseMap["_MC_"];
+      if (mcComponent == "0_0_0") continue;
+      TH1F* hComp = FSHistogram::getTH1F(histFileName,histograms[j]);
+      if (!hComp){ cout << "histogram problem" << endl; exit(0); }
+      double nComp = hComp->GetEntries();
+      mcComponents1.push_back(pair<TString,float>(mcComponent,nComp/nTot));
+    }
+    if (mcComponents1.size() > 1){
+    for (unsigned int imc1 = 0; imc1 < mcComponents1.size()-1; imc1++){
+    for (unsigned int imc2 = imc1+1; imc2 < mcComponents1.size(); imc2++){
+      if (mcComponents1[imc1].second < mcComponents1[imc2].second){
+        pair<TString,float> temp = mcComponents1[imc1];
+        mcComponents1[imc1] = mcComponents1[imc2];
+        mcComponents1[imc2] = temp;
+      }
+    }}}
+    vector<TString> mcComponents;
+    for (unsigned int j = 0; j < mcComponents1.size(); j++){
+      cout << FSModeHistogram::formatMCComponent(mcComponents1[j].first,mcComponents1[j].second) << endl;
+      if (mcComponents1[j].second*100 > 0.1) mcComponents.push_back(mcComponents1[j].first);
+    }
+    mcComponentsMap[subMode] = mcComponents;
+    cout << "*****************************************************\n"
+         << " DONE SETTING MC COMPONENTS FOR SUBMODE = " << getDescription(mi,modeCode3) << "\n"
+         << "*****************************************************" << endl;
   }
 }
 
+
 void writeHistograms(TString treeFileName, TString histFileName){
   setModeCode3ParticlesEtc();
-  setMCComponentsFromTreeFile(treeFileName);
+  bool isMC = isMCFromTreeFile(treeFileName);
+  if (isMC) setMCComponentsFromTreeFile(treeFileName);
   TString treeName = FSTree::getTreeNameFromFile(treeFileName);
   TFile outFile(FSString::TString2string(histFileName).c_str(), "recreate"); outFile.cd();
-  vector<TString> histList = getHistogramList(FSModeInfo(treeName));
+  vector<TString> histList = getHistogramList(FSModeInfo(treeName),isMC);
   for (unsigned int i = 0; i < histList.size(); i++){
-    TH1F* hist = getTH1F(treeFileName,treeName,histList[i]);
+    TH1F* hist = getTH1FFromTreeFile(treeFileName,treeName,histList[i]);
     outFile.cd();
     hist->SetName(histList[i]);
     hist->Write();
@@ -440,83 +590,230 @@ void writeHistograms(TString treeFileName, TString histFileName){
 }
 
 
-TString readHistograms(TString histFileName){
-  setModeCode3ParticlesEtc();
-  vector<TString> histNames;
-  TFile* inFile = new TFile(histFileName);
-  TIter nextkey(inFile->GetListOfKeys());
-  while (TKey* key = (TKey*)nextkey() ){
-    TObject* obj = key->ReadObj();
-    if (obj->IsA()->InheritsFrom("TH1")){
-      TH1F* hist = (TH1F*)obj;
-      TString histName = hist->GetName();
-      cout << histName << endl;
-      histNames.push_back(histName);
-    }
-  }
-  inFile->Close();
-  delete inFile;
-    // extract fsCode from file
-  if (histNames.size() == 0) { cout << "no histograms found" << endl; exit(0); }
-  vector<TString> parts = FSString::parseTString(histNames[0],"_");
-  if (parts.size() < 8)   { cout << "problem with histogram name" << endl; exit(0); }
-  if (parts[0] != "hist") { cout << "problem with histogram name" << endl; exit(0); }
-  if (parts[1] != "FS")   { cout << "problem with histogram name" << endl; exit(0); }
-  int modeCode3 = FSString::TString2int(parts[2]);
-  int modeCode2 = FSString::TString2int(parts[3]);
-  int modeCode1 = FSString::TString2int(parts[4]);
-  FSModeInfo mi = addModeCode3(FSModeInfo(modeCode1, modeCode2), modeCode3);
-    // check all the histogram names
-  vector<TString> histList = getHistogramList(mi);
-  if (histNames.size() != histList.size()){ cout << "wrong number of histograms" << endl; exit(0); }
-  for (unsigned int i = 0; i < histList.size(); i++){
-    bool found = false;
-    for (unsigned int j = 0; j < histNames.size(); j++){
-      if (histList[i] == histNames[j]){ found = true; continue; }
-    }
-    if (!found){ cout << "histogram mismatch" << endl; exit(0); }
-  }
-  return mi.modeString();
+TString fsCodeFromHistFile(TString histFileName){
+  if (histFileNameToFSCodeMap.find(histFileName) != histFileNameToFSCodeMap.end())
+    return histFileNameToFSCodeMap[histFileName];
+  vector<TString> histograms;
+  histograms = FSTree::getTObjNamesFromFile(histFileName,"TH1F","hist_FS_0_*_CUTS_011_T");
+  if (histograms.size() == 0){ cout << "problem 1 in fsCodeFromHistFile" << endl; exit(0); }
+  bool isMC = isMCFromHistFile(histFileName);
+  TString fsCode("");
+  if  (isMC) fsCode = FSString::captureParentheses(histograms[0],0,"FS_0_","_MC_");
+  if (!isMC) fsCode = FSString::captureParentheses(histograms[0],0,"FS_0_","_CUTS_");
+  if (fsCode == ""){ cout << "problem 2 in fsCodeFromHistFile" << endl; exit(0); }
+  histFileNameToFSCodeMap[histFileName] = fsCode;
+  return fsCode;
 }
 
 
-pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures){
-  TString histIndexFS = "hist_FS_" + subMode;
+pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TString histType, TString outputFigures){
+  clearMemCache();
+  setModeCode3ParticlesEtc();
+  if (!isMCFromHistFile(histFileName)) {cout << "problem 1 in makeMCFigure" << endl; exit(0);}
+  setMCComponentsFromHistFile(histFileName);
+  TString histIndexFS = "hist_FS_" + subMode + "_MC_0_0_0";
   cout << "******************************************************" << endl;
-  cout << "FIGURES FOR " << histIndexFS << endl;
+  cout << "MC FIGURES FOR " << histIndexFS << endl;
   cout << "histType = " << histType << endl;
   cout << "subMode = " << subMode << endl;
   cout << "******************************************************" << endl;
-  TH1F* histAllTAllChi2AllRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_000_"+histType);
-  TH1F* histAllTAllChi2SigRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_001_"+histType);
-  TH1F* histAllTAllChi2OutRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_002_"+histType);
-  TH1F* histAllTSigChi2AllRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_010_"+histType);
-  TH1F* histAllTSigChi2SigRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_011_"+histType);
-  TH1F* histAllTSigChi2OutRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_012_"+histType);
-  TH1F* histAllTOutChi2AllRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_020_"+histType);
-  TH1F* histAllTOutChi2SigRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_021_"+histType);
-  TH1F* histAllTOutChi2OutRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_022_"+histType);
-  TH1F* histLowTAllChi2AllRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_100_"+histType);
-  TH1F* histLowTAllChi2SigRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_101_"+histType);
-  TH1F* histLowTAllChi2OutRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_102_"+histType);
-  TH1F* histLowTSigChi2AllRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_110_"+histType);
-  TH1F* histLowTSigChi2SigRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_111_"+histType);
-  TH1F* histLowTSigChi2OutRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_112_"+histType);
-  TH1F* histLowTOutChi2AllRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_120_"+histType);
-  TH1F* histLowTOutChi2SigRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_121_"+histType);
-  TH1F* histLowTOutChi2OutRF = FSHistogram::getTH1F(histFileName,histIndexFS+"_CUTS_122_"+histType);
-  TH1F* histAllTAllChi2SubRF = new TH1F(*histAllTAllChi2SigRF); histAllTAllChi2SubRF->Add(histAllTAllChi2OutRF,-1.0);
-  TH1F* histAllTSigChi2SubRF = new TH1F(*histAllTSigChi2SigRF); histAllTSigChi2SubRF->Add(histAllTSigChi2OutRF,-1.0);
-  TH1F* histAllTOutChi2SubRF = new TH1F(*histAllTOutChi2SigRF); histAllTOutChi2SubRF->Add(histAllTOutChi2OutRF,-1.0);
-  TH1F* histLowTAllChi2SubRF = new TH1F(*histLowTAllChi2SigRF); histLowTAllChi2SubRF->Add(histLowTAllChi2OutRF,-1.0);
-  TH1F* histLowTSigChi2SubRF = new TH1F(*histLowTSigChi2SigRF); histLowTSigChi2SubRF->Add(histLowTSigChi2OutRF,-1.0);
-  TH1F* histLowTOutChi2SubRF = new TH1F(*histLowTOutChi2SigRF); histLowTOutChi2SubRF->Add(histLowTOutChi2OutRF,-1.0);
   TString caption("");
   TCanvas* c1;
   if (histType == "RFTIME"){
     c1 = new TCanvas("c1","c1",1000,1000);
     c1->Divide(1,2);
     c1->cd(1);
+    pair<THStack*,TLegend*>
+          mcstLowTSigChi2AllRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_110_RFTIME");
+    TH1F* histLowTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_110_RFTIME");
+    FSHistogram::setHistogramMaxima(histLowTSigChi2AllRF);
+    histLowTSigChi2AllRF->Draw("");
+    mcstLowTSigChi2AllRF.first->Draw("same");
+    histLowTSigChi2AllRF->Draw("same");
+    mcstLowTSigChi2AllRF.second->Draw("same");
+    c1->cd(2);
+    pair<THStack*,TLegend*>
+          mcstAllTSigChi2AllRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_010_RFTIME");
+    TH1F* histAllTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_010_RFTIME");
+    FSHistogram::setHistogramMaxima(histAllTSigChi2AllRF);
+    histAllTSigChi2AllRF->Draw("");
+    mcstAllTSigChi2AllRF.first->Draw("same");
+    histAllTSigChi2AllRF->Draw("same");
+    mcstAllTSigChi2AllRF.second->Draw("same");
+    caption = "Distributions of RF $\\Delta t$  broken up into MC components "
+              "for the $\\chi^2/\\mathrm{dof}<5$ signal region. "
+              "TOP is low $|t|$~($|t|<0.5$~GeV$^{2}$) "
+                   "and high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
+              "BOTTOM is all $|t|$ and all $E_{\\mathrm{beam}}$.";
+  }
+  if (histType == "CHI2DOF"){
+    c1 = new TCanvas("c1","c1",1000,1000);
+    c1->Divide(2,2);
+    c1->cd(1);
+    pair<THStack*,TLegend*>
+          mcstLowTAllChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_101_CHI2DOF");
+    TH1F* histLowTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_101_CHI2DOF");
+    FSHistogram::setHistogramMaxima(histLowTAllChi2SigRF);
+    histLowTAllChi2SigRF->Draw("");
+    mcstLowTAllChi2SigRF.first->Draw("same");
+    histLowTAllChi2SigRF->Draw("same");
+    mcstLowTAllChi2SigRF.second->Draw("same");
+    c1->cd(2);
+    pair<THStack*,TLegend*>
+          mcstLowTAllChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_10S_CHI2DOF");
+    TH1F* histLowTAllChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_10S_CHI2DOF");
+    histLowTAllChi2SubRF->Draw("");
+    mcstLowTAllChi2SubRF.first->Draw("same");
+    histLowTAllChi2SubRF->Draw("same");
+    mcstLowTAllChi2SubRF.second->Draw("same");
+    drawZeroLine(histLowTAllChi2SubRF);
+    c1->cd(3);
+    pair<THStack*,TLegend*>
+          mcstAllTAllChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_001_CHI2DOF");
+    TH1F* histAllTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_001_CHI2DOF");
+    FSHistogram::setHistogramMaxima(histAllTAllChi2SigRF);
+    histAllTAllChi2SigRF->Draw("");
+    mcstAllTAllChi2SigRF.first->Draw("same");
+    histAllTAllChi2SigRF->Draw("same");
+    mcstAllTAllChi2SigRF.second->Draw("same");
+    c1->cd(4);
+    pair<THStack*,TLegend*>
+          mcstAllTAllChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_00S_CHI2DOF");
+    TH1F* histAllTAllChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_00S_CHI2DOF");
+    histAllTAllChi2SubRF->Draw("");
+    mcstAllTAllChi2SubRF.first->Draw("same");
+    histAllTAllChi2SubRF->Draw("same");
+    mcstAllTAllChi2SubRF.second->Draw("same");
+    drawZeroLine(histAllTAllChi2SubRF);
+    caption = "Distributions of $\\chi^2$/dof broken up into MC components.  "
+              "TOP is low $|t|$~($|t|<0.5$~GeV$^{2}$) "
+                   "and high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
+              "BOTTOM is all $|t|$ and all $E_{\\mathrm{beam}}$. "
+              "LEFT is in time; "
+              "RIGHT is time subtracted.";
+  }
+  if (histType == "T"){
+    c1 = new TCanvas("c1","c1",1000,1000);
+    c1->Divide(2,2);
+    c1->cd(1);
+    pair<THStack*,TLegend*>
+          mcstLowTSigChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_111_T");
+    TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_T");
+    FSHistogram::setHistogramMaxima(histLowTSigChi2SigRF);
+    histLowTSigChi2SigRF->Draw("");
+    mcstLowTSigChi2SigRF.first->Draw("same");
+    histLowTSigChi2SigRF->Draw("same");
+    mcstLowTSigChi2SigRF.second->Draw("same");
+    c1->cd(2);
+    pair<THStack*,TLegend*>
+          mcstLowTSigChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_11S_T");
+    TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_T");
+    FSHistogram::setHistogramMaxima(histLowTSigChi2SubRF);
+    histLowTSigChi2SubRF->Draw("");
+    mcstLowTSigChi2SubRF.first->Draw("same");
+    histLowTSigChi2SubRF->Draw("same");
+    mcstLowTSigChi2SubRF.second->Draw("same");
+    drawZeroLine(histLowTSigChi2SubRF);
+    c1->cd(3);
+    pair<THStack*,TLegend*>
+          mcstAllTSigChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_011_T");
+    TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_T");
+    FSHistogram::setHistogramMaxima(histAllTSigChi2SigRF);
+    histAllTSigChi2SigRF->Draw("");
+    mcstAllTSigChi2SigRF.first->Draw("same");
+    histAllTSigChi2SigRF->Draw("same");
+    mcstAllTSigChi2SigRF.second->Draw("same");
+    c1->cd(4);
+    pair<THStack*,TLegend*>
+          mcstAllTSigChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_01S_T");
+    TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_T");
+    FSHistogram::setHistogramMaxima(histAllTSigChi2SubRF);
+    histAllTSigChi2SubRF->Draw("");
+    mcstAllTSigChi2SubRF.first->Draw("same");
+    histAllTSigChi2SubRF->Draw("same");
+    mcstAllTSigChi2SubRF.second->Draw("same");
+    drawZeroLine(histAllTSigChi2SubRF);
+    caption = "Distributions of $-t$ broken up into MC components. "
+              "TOP is high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
+              "BOTTOM is all $E_{\\mathrm{beam}}$. "
+              "LEFT is in time and "
+              "RIGHT is time subtracted, "
+              "all in the $\\chi^2/\\mathrm{dof}<5$ signal region.";
+  }
+  if (histType.Contains("MASS")){
+    c1 = new TCanvas("c1","c1",1000,1000);
+    c1->Divide(2,2);
+    c1->cd(1);
+    pair<THStack*,TLegend*>
+          mcstLowTSigChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_111_"+histType);
+    TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_"+histType);
+    FSHistogram::setHistogramMaxima(histLowTSigChi2SigRF);
+    histLowTSigChi2SigRF->Draw("");
+    mcstLowTSigChi2SigRF.first->Draw("same");
+    histLowTSigChi2SigRF->Draw("same");
+    mcstLowTSigChi2SigRF.second->Draw("same");
+    c1->cd(2);
+    pair<THStack*,TLegend*>
+          mcstLowTSigChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_11S_"+histType);
+    TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_"+histType);
+    FSHistogram::setHistogramMaxima(histLowTSigChi2SubRF);
+    histLowTSigChi2SubRF->Draw("");
+    mcstLowTSigChi2SubRF.first->Draw("same");
+    histLowTSigChi2SubRF->Draw("same");
+    mcstLowTSigChi2SubRF.second->Draw("same");
+    drawZeroLine(histLowTSigChi2SubRF);
+    c1->cd(3);
+    pair<THStack*,TLegend*>
+          mcstAllTSigChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_011_"+histType);
+    TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_"+histType);
+    FSHistogram::setHistogramMaxima(histAllTSigChi2SigRF);
+    histAllTSigChi2SigRF->Draw("");
+    mcstAllTSigChi2SigRF.first->Draw("same");
+    histAllTSigChi2SigRF->Draw("same");
+    mcstAllTSigChi2SigRF.second->Draw("same");
+    c1->cd(4);
+    pair<THStack*,TLegend*>
+          mcstAllTSigChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_01S_"+histType);
+    TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_"+histType);
+    FSHistogram::setHistogramMaxima(histAllTSigChi2SubRF);
+    histAllTSigChi2SubRF->Draw("");
+    mcstAllTSigChi2SubRF.first->Draw("same");
+    histAllTSigChi2SubRF->Draw("same");
+    mcstAllTSigChi2SubRF.second->Draw("same");
+    drawZeroLine(histAllTSigChi2SubRF);
+    caption = "Mass distributions broken up into MC components.  "
+              "TOP is low $|t|$~($|t|<0.5$~GeV$^{2}$) "
+                   "and high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
+              "BOTTOM is all $|t|$ and all $E_{\\mathrm{beam}}$. "
+              "LEFT is in time and "
+              "RIGHT is time subtracted, "
+              "all in the $\\chi^2/\\mathrm{dof}<5$ signal region.";
+  }
+  c1->cd();
+  TString pdfFileName = outputFigures+"/"+histIndexFS+"_"+histType+"_MC.pdf";
+  c1->Print(pdfFileName);
+  return pair<TString,TString>(pdfFileName,caption);
+}
+
+
+pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures){
+  clearMemCache();
+  setModeCode3ParticlesEtc();
+  bool isMC = isMCFromHistFile(histFileName);
+  TString histIndexFS = "hist_FS_" + subMode;  if (isMC) histIndexFS += "_MC_0_0_0";
+  cout << "******************************************************" << endl;
+  cout << "FIGURES FOR " << histIndexFS << endl;
+  cout << "histType = " << histType << endl;
+  cout << "subMode = " << subMode << endl;
+  cout << "******************************************************" << endl;
+  TString caption("");
+  TCanvas* c1;
+  if (histType == "RFTIME"){
+    c1 = new TCanvas("c1","c1",1000,1000);
+    c1->Divide(1,2);
+    c1->cd(1);
+    TH1F* histLowTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_110_RFTIME");
+    TH1F* histLowTOutChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_120_RFTIME");
     FSHistogram::setHistogramMaxima(histLowTSigChi2AllRF,histLowTOutChi2AllRF);
     histLowTOutChi2AllRF->SetLineColor(kAzure-4);
     histLowTOutChi2AllRF->SetFillStyle(3002);
@@ -525,6 +822,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTOutChi2AllRF->Draw("hist,same");
     histLowTSigChi2AllRF->Draw("same");
     c1->cd(2);
+    TH1F* histAllTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_010_RFTIME");
+    TH1F* histAllTOutChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_020_RFTIME");
     FSHistogram::setHistogramMaxima(histAllTSigChi2AllRF,histAllTOutChi2AllRF);
     histAllTOutChi2AllRF->SetLineColor(kAzure-4);
     histAllTOutChi2AllRF->SetFillStyle(3002);
@@ -543,6 +842,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1 = new TCanvas("c1","c1",1000,1000);
     c1->Divide(2,2);
     c1->cd(1);
+    TH1F* histLowTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_101_CHI2DOF");
+    TH1F* histLowTAllChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_102_CHI2DOF");
     FSHistogram::setHistogramMaxima(histLowTAllChi2SigRF,histLowTAllChi2OutRF);
     histLowTAllChi2OutRF->SetLineColor(kRed-3);
     histLowTAllChi2OutRF->SetFillStyle(3002);
@@ -551,8 +852,11 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTAllChi2OutRF->Draw("hist,same");
     histLowTAllChi2SigRF->Draw("same");
     c1->cd(2);
+    TH1F* histLowTAllChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_10S_CHI2DOF");
     histLowTAllChi2SubRF->Draw("");
     c1->cd(3);
+    TH1F* histAllTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_001_CHI2DOF");
+    TH1F* histAllTAllChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_002_CHI2DOF");
     FSHistogram::setHistogramMaxima(histAllTAllChi2SigRF,histAllTAllChi2OutRF);
     histAllTAllChi2OutRF->SetLineColor(kRed-3);
     histAllTAllChi2OutRF->SetFillStyle(3002);
@@ -561,6 +865,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTAllChi2OutRF->Draw("hist,same");
     histAllTAllChi2SigRF->Draw("same");
     c1->cd(4);
+    TH1F* histAllTAllChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_00S_CHI2DOF");
     histAllTAllChi2SubRF->Draw("");
     caption = "Distributions of $\\chi^2$/dof.  "
               "TOP is low $|t|$~($|t|<0.5$~GeV$^{2}$) "
@@ -573,6 +878,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1 = new TCanvas("c1","c1",1000,1000);
     c1->Divide(2,2);
     c1->cd(1);
+    TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_T");
+    TH1F* histLowTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_112_T");
     FSHistogram::setHistogramMaxima(histLowTSigChi2SigRF,histLowTSigChi2OutRF);
     histLowTSigChi2OutRF->SetLineColor(kRed-3);
     histLowTSigChi2OutRF->SetFillStyle(3002);
@@ -581,6 +888,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTSigChi2OutRF->Draw("hist,same");
     histLowTSigChi2SigRF->Draw("same");
     c1->cd(2);
+    TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_T");
+    TH1F* histLowTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_12S_T");
     FSHistogram::setHistogramMaxima(histLowTSigChi2SubRF,histLowTOutChi2SubRF);
     FSHistogram::setHistogramMinima(histLowTSigChi2SubRF,histLowTOutChi2SubRF);
     histLowTOutChi2SubRF->SetLineColor(kAzure-4);
@@ -590,6 +899,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTOutChi2SubRF->Draw("hist,same");
     histLowTSigChi2SubRF->Draw("same");
     c1->cd(3);
+    TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_T");
+    TH1F* histAllTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_012_T");
     FSHistogram::setHistogramMaxima(histAllTSigChi2SigRF,histAllTSigChi2OutRF);
     histAllTSigChi2OutRF->SetLineColor(kRed-3);
     histAllTSigChi2OutRF->SetFillStyle(3002);
@@ -598,6 +909,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTSigChi2OutRF->Draw("hist,same");
     histAllTSigChi2SigRF->Draw("same");
     c1->cd(4);
+    TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_T");
+    TH1F* histAllTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_02S_T");
     FSHistogram::setHistogramMaxima(histAllTSigChi2SubRF,histAllTOutChi2SubRF);
     FSHistogram::setHistogramMinima(histAllTSigChi2SubRF,histAllTOutChi2SubRF);
     histAllTOutChi2SubRF->SetLineColor(kAzure-4);
@@ -618,6 +931,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1 = new TCanvas("c1","c1",1000,1000);
     c1->Divide(2,2);
     c1->cd(1);
+    TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_"+histType);
+    TH1F* histLowTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_112_"+histType);
     FSHistogram::setHistogramMaxima(histLowTSigChi2SigRF,histLowTSigChi2OutRF);
     histLowTSigChi2OutRF->SetLineColor(kRed-3);
     histLowTSigChi2OutRF->SetFillStyle(3002);
@@ -626,6 +941,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTSigChi2OutRF->Draw("hist,same");
     histLowTSigChi2SigRF->Draw("same");
     c1->cd(2);
+    TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_"+histType);
+    TH1F* histLowTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_12S_"+histType);
     FSHistogram::setHistogramMaxima(histLowTSigChi2SubRF,histLowTOutChi2SubRF);
     FSHistogram::setHistogramMinima(histLowTSigChi2SubRF,histLowTOutChi2SubRF);
     histLowTOutChi2SubRF->SetLineColor(kAzure-4);
@@ -635,6 +952,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTOutChi2SubRF->Draw("hist,same");
     histLowTSigChi2SubRF->Draw("same");
     c1->cd(3);
+    TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_"+histType);
+    TH1F* histAllTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_012_"+histType);
     FSHistogram::setHistogramMaxima(histAllTSigChi2SigRF,histAllTSigChi2OutRF);
     histAllTSigChi2OutRF->SetLineColor(kRed-3);
     histAllTSigChi2OutRF->SetFillStyle(3002);
@@ -643,6 +962,8 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTSigChi2OutRF->Draw("hist,same");
     histAllTSigChi2SigRF->Draw("same");
     c1->cd(4);
+    TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_"+histType);
+    TH1F* histAllTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_02S_"+histType);
     FSHistogram::setHistogramMaxima(histAllTSigChi2SubRF,histAllTOutChi2SubRF);
     FSHistogram::setHistogramMinima(histAllTSigChi2SubRF,histAllTOutChi2SubRF);
     histAllTOutChi2SubRF->SetLineColor(kAzure-4);
@@ -668,14 +989,15 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
 
 
 void makePDF(TString histFileName, TString outputDirectory, TString baseName){
-  outputDirectory = FSSystem::getAbsolutePath(outputDirectory,false);
-  if (outputDirectory == ""){ cout << "problem with output directory" << endl; exit(0); }
-  vector<TString> nameParts = FSString::parseTString(histFileName,".",true);
-  TString outputName = baseName;
-  TString fsCode = readHistograms(histFileName);
+  setModeCode3ParticlesEtc();
+  bool isMC = isMCFromHistFile(histFileName);
+  if (isMC) setMCComponentsFromHistFile(histFileName);
+  TString fsCode = fsCodeFromHistFile(histFileName);
   FSModeInfo miFS(fsCode);
   TString fsDescription(getDescription(miFS,0));
-  outputDirectory = outputDirectory + "/" + outputName;
+  outputDirectory = FSSystem::getAbsolutePath(outputDirectory,false);
+  if (outputDirectory == ""){ cout << "problem with output directory" << endl; exit(0); }
+  outputDirectory = outputDirectory + "/" + baseName;
   if (FSSystem::getAbsolutePath(outputDirectory,false) != "")
     { cout << "directory already exists: " << outputDirectory << endl; 
       cout << "WARNING, replacing it!" << endl;  system("rm -rf "+outputDirectory);}
@@ -684,7 +1006,7 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
   TString outputFigures = outputDirectory + "/figures";
   cout << "Creating figures directory: " << outputFigures << endl;
   system("mkdir "+outputFigures);
-  TString latexFile = outputDirectory + "/"+outputName+".tex";
+  TString latexFile = outputDirectory + "/"+baseName+".tex";
   cout << "Creating latex file:        " << latexFile << endl;
   FSString::latexHeader(latexFile);
   FSString::writeTStringToFile(latexFile,
@@ -710,6 +1032,8 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
     // "  \\item Photon combinations not from a $\\pi^0$ are vetoed if they land in a 50~MeV wide window\n"
     // "    around the $\\pi^0$ mass.\n" 
     " \\end{itemize}\n");
+  if (isMC) FSString::writeTStringToFile(latexFile,
+    "The following plots are for MC (add more information).\n");
   vector<int> modeCode3List = getModeCode3List(miFS);
   for (unsigned int i = 0; i < modeCode3List.size(); i++){
     FSModeInfo mi = addModeCode3(miFS,modeCode3List[i],-1);
@@ -731,6 +1055,18 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
       "\\caption{"+histInfo.second+"}\n"
       "\\end{figure}\n\n");
 
+    if (isMC){
+      histInfo = makeMCFigure(histFileName,subMode,"RFTIME",outputFigures);
+      FSString::writeTStringToFile(latexFile,
+        "\\newpage\n\n"
+        "\\begin{figure}[h!]\n"
+        "\\begin{center}\n"
+        "\\includegraphics[width=\\columnwidth]{"+histInfo.first+"}"
+        "\\end{center}\n"
+        "\\caption{"+histInfo.second+"}\n"
+        "\\end{figure}\n\n");
+    }
+
     histInfo = makeFigure(histFileName,subMode,"CHI2DOF",outputFigures);
     FSString::writeTStringToFile(latexFile,
       "\\newpage\n\n"
@@ -742,6 +1078,18 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
       "\\caption{"+histInfo.second+"}\n"
       "\\end{figure}\n\n");
 
+    if (isMC){
+      histInfo = makeMCFigure(histFileName,subMode,"CHI2DOF",outputFigures);
+      FSString::writeTStringToFile(latexFile,
+        "\\newpage\n\n"
+        "\\begin{figure}[h!]\n"
+        "\\begin{center}\n"
+        "\\includegraphics[width=\\columnwidth]{"+histInfo.first+"}"
+        "\\end{center}\n"
+        "\\caption{"+histInfo.second+"}\n"
+        "\\end{figure}\n\n");
+    }
+
     histInfo = makeFigure(histFileName,subMode,"T",outputFigures);
     FSString::writeTStringToFile(latexFile,
       "\\newpage\n\n"
@@ -752,6 +1100,18 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
       "\\end{center}\n"
       "\\caption{"+histInfo.second+"}\n"
       "\\end{figure}\n\n");
+
+    if (isMC){
+      histInfo = makeMCFigure(histFileName,subMode,"T",outputFigures);
+      FSString::writeTStringToFile(latexFile,
+        "\\newpage\n\n"
+        "\\begin{figure}[h!]\n"
+        "\\begin{center}\n"
+        "\\includegraphics[width=\\columnwidth]{"+histInfo.first+"}"
+        "\\end{center}\n"
+        "\\caption{"+histInfo.second+"}\n"
+        "\\end{figure}\n\n");
+    }
 
     vector<TString> massCombinations = getMassCombinations(mi,modeCode3List[i]);
     for (unsigned int j = 0; j < massCombinations.size(); j++){
@@ -772,6 +1132,17 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
         "\\end{center}\n"
         "\\caption{"+histInfo.second+"}\n"
         "\\end{figure}\n\n");
+      if (isMC){
+        histInfo = makeMCFigure(histFileName,subMode,"MASS_"+massCombinations[j],outputFigures);
+        FSString::writeTStringToFile(latexFile,
+          "\\newpage\n\n"
+          "\\begin{figure}[h!]\n"
+          "\\begin{center}\n"
+          "\\includegraphics[width=\\columnwidth]{"+histInfo.first+"}"
+          "\\end{center}\n"
+          "\\caption{"+histInfo.second+"}\n"
+          "\\end{figure}\n\n");
+      }
     }
 
   }
@@ -782,46 +1153,20 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
 }
 
 
-
-
-vector< vector<int> > pushBackToEach(vector< vector<int> > originalList, vector<int> newPart){
-  vector< vector<int> > newList;
-  for (unsigned int i = 0; i < originalList.size() || ((originalList.size()==0)&&(i==0)); i++){
-  for (unsigned int j = 0; j < newPart.size(); j++){
-    vector<int> newComponent;
-    if (originalList.size() != 0) newComponent = originalList[i];
-    newComponent.push_back(newPart[j]);
-    newList.push_back(newComponent);
-  }}
-  return newList;
+bool isMCFromTreeFile(TString treeFileName){
+  TString FN(treeFileName);
+  TString NT(FSTree::getTreeNameFromFile(FN));
+  if (FSTree::getBranchNamesFromTree(FN,NT,"MCDecayCode1").size() == 0) return false;
+  return true;
 }
 
-
-vector<TString> expandIntegers(TString input){
-    // get all the integers from input
-  vector<int> intInput;
-  for (unsigned int i = 0; i < input.Length(); i++){
-    TString digit(input[i]);
-    if (digit.IsDigit()) intInput.push_back(FSString::TString2int(digit));
-  }
-    // make all the combinations
-  vector< vector<int> > expandedIntInputs;
-  for (unsigned int i = 0; i < intInput.size(); i++){
-    vector<int> combo;
-    for (unsigned int j = 0; j <= intInput[i]; j++){ combo.push_back(j); }
-    expandedIntInputs = pushBackToEach(expandedIntInputs,combo);
-  }
-    // put these back into string format
-  vector<TString> expandedInput;
-  for (unsigned int i = 0; i < expandedIntInputs.size(); i++){
-    TString newCode = "";  int idigit = 0;
-    for (unsigned int j = 0; j < input.Length(); j++){
-      TString digit(input[j]);
-      if (!digit.IsDigit()){ newCode = newCode + digit; }
-      else { newCode += expandedIntInputs[i][idigit++]; }
-    }
-    expandedInput.push_back(newCode);
-  }
-  return expandedInput;
+bool isMCFromHistFile(TString histFileName){
+  if (FSTree::getTObjNamesFromFile(histFileName,"TH1F","*_MC_*").size() == 0) return false;
+  return true;
 }
 
+void drawZeroLine(TH1F* hist){
+  double x1 = hist->GetBinLowEdge(1);
+  double x2 = hist->GetBinLowEdge(hist->GetNbinsX()) + hist->GetBinWidth(1);
+  TLine* line = new TLine(x1,0.0,x2,0.0); line->Draw("same");
+}
