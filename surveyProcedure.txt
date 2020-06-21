@@ -18,14 +18,17 @@ time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
            -massWindows 0.05  \
            -in INPUTDIR/BASENAME.root \
            -out OUTPUTDIR/BASENAME_flat.root
-
+        [IF MC, ALSO INCLUDE:]
+           -mc 1
 
 
 ################################################################################
 #  STEP 2:  Create histograms.
 #             -- uses GlueXSurvey/surveyFSTreeToHist
-#             -- available in GitHub: https://github.com/remitche66/GlueXSurvey.git
-#             -- depends on FSRoot: https://github.com/remitche66/FSRoot.git
+#             -- available in GitHub:
+#                  https://github.com/remitche66/GlueXSurvey.git
+#             -- depends on FSRoot (tag version >= v2.3): 
+#                  https://github.com/remitche66/FSRoot.git   
 #             -- output is a histogram file
 #             -- run separately over each run and each final state
 ################################################################################
@@ -51,8 +54,10 @@ time SOMEPATH/root/bin/hadd \
 ################################################################################
 #  STEP 4:  Make a PDF file of histograms.
 #             -- uses GlueXSurvey/surveyHistToLatex
-#             -- available in GitHub: https://github.com/remitche66/GlueXSurvey.git
-#             -- depends on FSRoot: https://github.com/remitche66/FSRoot.git
+#             -- available in GitHub:
+#                  https://github.com/remitche66/GlueXSurvey.git
+#             -- depends on FSRoot (tag version >= v2.3): 
+#                  https://github.com/remitche66/FSRoot.git   
 #             -- also makes a system call to pdflatex
 #             -- run once for each final state
 ################################################################################
