@@ -886,6 +886,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(2);
     TH1F* histLowTAllChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_10S_CHI2DOF");
     histLowTAllChi2SubRF->Draw("");
+    drawZeroLine(histLowTAllChi2SubRF);
     c1->cd(3);
     TH1F* histAllTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_001_CHI2DOF");
     TH1F* histAllTAllChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_002_CHI2DOF");
@@ -899,6 +900,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(4);
     TH1F* histAllTAllChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_00S_CHI2DOF");
     histAllTAllChi2SubRF->Draw("");
+    drawZeroLine(histAllTAllChi2SubRF);
     caption = "Distributions of $\\chi^2$/dof.  "
               "TOP is low $|t|$~($|t|<0.5$~GeV$^{2}$) "
                    "and high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
@@ -930,6 +932,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTSigChi2SubRF->Draw("");
     histLowTOutChi2SubRF->Draw("hist,same");
     histLowTSigChi2SubRF->Draw("same");
+    drawZeroLine(histLowTSigChi2SubRF);
     c1->cd(3);
     TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_T");
     TH1F* histAllTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_012_T");
@@ -951,6 +954,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTSigChi2SubRF->Draw("");
     histAllTOutChi2SubRF->Draw("hist,same");
     histAllTSigChi2SubRF->Draw("same");
+    drawZeroLine(histAllTSigChi2SubRF);
     caption = "Distributions of $-t$. "
               "TOP is high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
               "BOTTOM is all $E_{\\mathrm{beam}}$. "
@@ -983,6 +987,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTSigChi2SubRF->Draw("");
     histLowTOutChi2SubRF->Draw("hist,same");
     histLowTSigChi2SubRF->Draw("same");
+    drawZeroLine(histLowTSigChi2SubRF);
     c1->cd(3);
     TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_"+histType);
     TH1F* histAllTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_012_"+histType);
@@ -1004,6 +1009,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTSigChi2SubRF->Draw("");
     histAllTOutChi2SubRF->Draw("hist,same");
     histAllTSigChi2SubRF->Draw("same");
+    drawZeroLine(histAllTSigChi2SubRF);
     caption = "Mass distributions.  "
               "TOP is low $|t|$~($|t|<0.5$~GeV$^{2}$) "
                    "and high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
