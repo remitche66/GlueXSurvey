@@ -59,5 +59,6 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName);
 bool isMCFromTreeFile(TString treeFileName);
 bool isMCFromHistFile(TString histFileName);
 void drawZeroLine(TH1F* hist);
+int color(int color);
 
 #endif
