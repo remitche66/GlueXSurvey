@@ -181,18 +181,22 @@ TString getSubModeCuts(int modeCode3){
 
 
 TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode, TString histType){
-  FSModeInfo miX = removeRecoilBaryon(mi);
-  TString listX(getComboFormat(miX,modeCode3));
-  FSCut::defineCut("T","(-1*MASS2("+listX+";GLUEXBEAM)<0.5)&&(REnPB>8.0)");
-  if (histType == "T") FSCut::defineCut("T","(REnPB>8.0)");
-  FSCut::defineCut("Chi2DOF","Chi2DOF<5.0","Chi2DOF>10.0&&Chi2DOF<15.0",1.0);
-  if (histType == "CHI2DOF") FSCut::defineCut("Chi2DOF","(1==1)","(1==1)",1.0);
-  FSCut::defineCut("RFDeltaT","abs(RFDeltaT)<2.0","abs(RFDeltaT)>2.0&&abs(RFDeltaT)<10.0",1.0/4.0);
-  if (histType == "RFTIME") FSCut::defineCut("RfDeltaT","(1==1)","(1==1)",1.0);
   int icutCode = FSString::TString2int(cutCode);
   int iT      = (((icutCode%1000)-(icutCode%100))/100);
   int iCHI2   = (((icutCode%100)-(icutCode%10))/10);
   int iRFTIME = (((icutCode%10)-(icutCode%1))/1);
+  if (iT != 0){
+    FSModeInfo miX = removeRecoilBaryon(mi);
+    TString listX(getComboFormat(miX,modeCode3));
+    FSCut::defineCut("T","(-1*MASS2("+listX+";GLUEXBEAM)<0.5)&&(REnPB>8.0)");
+    if (histType == "T") FSCut::defineCut("T","(REnPB>8.0)");
+  }
+  if (iCHI2 != 0){
+    FSCut::defineCut("Chi2DOF","Chi2DOF<5.0","Chi2DOF>10.0&&Chi2DOF<15.0",1.0);
+  }
+  if (iRFTIME != 0){
+    FSCut::defineCut("RFDeltaT","abs(RFDeltaT)<2.0","abs(RFDeltaT)>2.0&&abs(RFDeltaT)<10.0",1.0/4.0);
+  }
   TString cuts("");
   if (iT == 0)     {if (cuts != "") cuts += "&&"; cuts += "(1==1)"; }
   if (iT == 1)     {if (cuts != "") cuts += "&&"; cuts += "CUT(T)"; }
@@ -272,7 +276,7 @@ vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3, bool show){
 
 
 
-vector<TString> getHistogramList(FSModeInfo miFS, bool isMC, bool show){
+vector<TString> getHistogramList(FSModeInfo miFS, bool isMC, bool isMCThrown, bool show){
   vector<TString> histogramList;
   vector<int> modeCode3List = getModeCode3List(miFS);
   vector<TString> cutCombos = FSString::expandIntegers("122");
@@ -299,6 +303,12 @@ vector<TString> getHistogramList(FSModeInfo miFS, bool isMC, bool show){
         int iT      = (((icutCode%1000)-(icutCode%100))/100);
         int iCHI2   = (((icutCode%100)-(icutCode%10))/10);
         int iRFTIME = (((icutCode%10)-(icutCode%1))/1);
+          // ** EBEAM **
+        if (isMCThrown && iT == 0 && iCHI2 == 0 && iRFTIME == 0)
+          histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_EBEAM");
+        if (!isMCThrown && iT == 0 && iCHI2 != 0 && iRFTIME != 0)
+          histogramList.push_back(histIndexFS+"_"+histIndexCUT+"_EBEAM");
+        if (isMCThrown) continue;
           // ** MASS **
         if (iCHI2 != 0 && iRFTIME != 0){
           for (unsigned int iM = 0; iM < massCombos.size(); iM++){
@@ -348,7 +358,9 @@ TH1F* getTH1FFromTreeFile(TString fileName, TString treeName, TString histName){
   TString fsCode = addModeCode3(FSModeInfo(modeCode1,modeCode2),modeCode3).modeString();
   FSModeCollection::clear();  FSModeCollection::addModeInfo(fsCode);
   TString title("#gamma p^{+} #rightarrow "); 
-  title += FSString::rootSymbols(getDescription(FSModeInfo(modeCode1,modeCode2),modeCode3));
+  TString fsTitle = FSString::rootSymbols(getDescription(FSModeInfo(modeCode1,modeCode2),modeCode3));
+  if (fsTitle == "") fsTitle = FSString::rootSymbols(FSModeHistogram::formatMCComponent(mcComponent));
+  title += fsTitle;
     // get the cuts
   TString CUTS = getSubModeCuts(modeCode3)+"&&"+
                  getOtherCuts(FSModeInfo(modeCode1,modeCode2),modeCode3,cutCode,histType)+"&&"+
@@ -398,6 +410,16 @@ TH1F* getTH1FFromTreeFile(TString fileName, TString treeName, TString histName){
     hist->SetTitle(title);
     hist->SetXTitle("RF #DeltaT   [ns]");
     hist->SetYTitle("Entries / Bin");
+    return hist;
+  }
+    // EBEAM distribution
+  if (histType == "EBEAM"){
+    TString VAR = "REnPB";  if (isMC) VAR = "MCEnPB";
+    TString BOUNDS("(140,0.0,14.0)");
+    TH1F* hist = FSModeHistogram::getTH1F(FN,NT,CAT,VAR,BOUNDS,CUTS);
+    hist->SetTitle(title);
+    hist->SetXTitle("Beam Energy   [GeV]");
+    hist->SetYTitle("Entries / 100 MeV");
     return hist;
   }
   return NULL;
@@ -508,9 +530,11 @@ pair<THStack*,TLegend*> getTHStFromHistFile(TString histFileName, TString histNa
 
 void setMCComponentsFromTreeFile(TString treeFileName){
   setModeCode3ParticlesEtc();
+  bool isMC = isMCFromTreeFile(treeFileName);
+  bool isMCThrown = isMCThrownFromTreeFile(treeFileName);
   TString FN(treeFileName);
   TString NT(FSTree::getTreeNameFromFile(FN));
-  if (FSTree::getBranchNamesFromTree(FN,NT,"MCDecayCode1").size() == 0) return;
+  if (!isMC) return;
   FSModeInfo miFS(NT);
   TString subMode0 = "0_"+miFS.modeString();
   if (mcComponentsMap.find(subMode0) != mcComponentsMap.end()) return;
@@ -519,6 +543,11 @@ void setMCComponentsFromTreeFile(TString treeFileName){
   TString BOUNDS("(10,0.0,4.0)");
   FSModeCollection::clear();
   FSModeCollection::addModeInfo(miFS.modeString());
+  if (isMCThrown){
+    mcComponentsMap[subMode0]
+      = FSModeHistogram::getMCComponents(FN,NT,CAT,VAR,BOUNDS,"",1.0,false,true);
+    return;
+  }
   vector<int> modeCode3List = getModeCode3List(miFS);
   for (unsigned int i = 0; i < modeCode3List.size(); i++){
     int modeCode3 = modeCode3List[i];
@@ -608,10 +637,11 @@ void setMCComponentsFromHistFile(TString histFileName){
 void writeHistograms(TString treeFileName, TString histFileName){
   setModeCode3ParticlesEtc();
   bool isMC = isMCFromTreeFile(treeFileName);
+  bool isMCThrown = isMCThrownFromTreeFile(treeFileName);
   if (isMC) setMCComponentsFromTreeFile(treeFileName);
   TString treeName = FSTree::getTreeNameFromFile(treeFileName);
   TFile outFile(FSString::TString2string(histFileName).c_str(), "recreate"); outFile.cd();
-  vector<TString> histList = getHistogramList(FSModeInfo(treeName),isMC);
+  vector<TString> histList = getHistogramList(FSModeInfo(treeName),isMC,isMCThrown);
   for (unsigned int i = 0; i < histList.size(); i++){
     TH1F* hist = getTH1FFromTreeFile(treeFileName,treeName,histList[i]);
     outFile.cd();
@@ -1195,6 +1225,14 @@ bool isMCFromTreeFile(TString treeFileName){
   TString FN(treeFileName);
   TString NT(FSTree::getTreeNameFromFile(FN));
   if (FSTree::getBranchNamesFromTree(FN,NT,"MCDecayCode1").size() == 0) return false;
+  return true;
+}
+
+bool isMCThrownFromTreeFile(TString treeFileName){
+  TString FN(treeFileName);
+  TString NT(FSTree::getTreeNameFromFile(FN));
+  if (FSTree::getBranchNamesFromTree(FN,NT,"MCEnPB").size() == 0) return false;
+  if (FSTree::getBranchNamesFromTree(FN,NT,"EnPB").size() == 1) return false;
   return true;
 }
 

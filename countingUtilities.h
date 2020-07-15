@@ -45,7 +45,7 @@ TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode);
 TString getMCCuts(TString mcComponent);
 vector<int> getModeCode3List(FSModeInfo mi, bool show = false);
 vector<TString> getMassCombinations(FSModeInfo mi, int modeCode3, bool show = false);
-vector<TString> getHistogramList(FSModeInfo mi, bool isMC, bool show = false);
+vector<TString> getHistogramList(FSModeInfo mi, bool isMC, bool isMCThrown, bool show = false);
 TH1F* getTH1FFromTreeFile(TString treeFileName, TString treeName, TString histName);
 TH1F* getTH1FFromHistFile(TString histFileName, TString histName);
 pair<THStack*,TLegend*> getTHStFromHistFile(TString histFileName, TString histName);
@@ -57,6 +57,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
 pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures);
 void makePDF(TString histFileName, TString outputDirectory, TString baseName);
 bool isMCFromTreeFile(TString treeFileName);
+bool isMCThrownFromTreeFile(TString treeFileName);
 bool isMCFromHistFile(TString histFileName);
 void drawZeroLine(TH1F* hist);
 int color(int color);

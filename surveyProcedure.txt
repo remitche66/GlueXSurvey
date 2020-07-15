@@ -1,16 +1,24 @@
 
 
 ################################################################################
-#  STEP 1:  Flatten analysis trees.
+#  STEP 1:  Flatten trees.
 #             -- uses hd_utilities/FlattenForFSRoot/flatten
 #             -- documentation is in hd_utilities/FlattenForFSRoot/Documentation
+#             -- input tree is in the GlueX analysis format
+#             -- type of input tree (reconstructed data, reconstructed MC, or thrown MC)
+#                determined automatically
 #             -- output is a root file with a flattened TTree (compatible with FSRoot)
+#           For reconstructed trees:
+#             -- final state is determined automatically
 #             -- will exit with no output root file if the final state is not supported
 #             -- run separately over each run and each final state
-#             -- for mc, currently need to add -mc 1
+#           For thrown trees:
+#             -- run separately over each run
 ################################################################################
 
-time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
+# For reconstructed trees:
+
+  time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
            -chi2 25 \
            -numUnusedTracks 1 \
            -numUnusedNeutrals 2 \
@@ -18,8 +26,12 @@ time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
            -massWindows 0.05  \
            -in INPUTDIR/BASENAME.root \
            -out OUTPUTDIR/BASENAME_flat.root
-        [IF MC, ALSO INCLUDE:]
-           -mc 1
+
+# For thrown trees:
+
+  time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
+           -in INPUTDIR/BASENAME.root \
+           -out OUTPUTDIR/BASENAME_flat.root
 
 
 ################################################################################
@@ -30,7 +42,10 @@ time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
 #             -- depends on FSRoot (tag version >= v2.3): 
 #                  https://github.com/remitche66/FSRoot.git   
 #             -- output is a histogram file
+#           For reconstructed trees:
 #             -- run separately over each run and each final state
+#           For thrown trees:
+#             -- run separately over each run
 ################################################################################
 
 time SOMEPATH/GlueXSurvey/surveyFSTreeToHist \
@@ -41,7 +56,11 @@ time SOMEPATH/GlueXSurvey/surveyFSTreeToHist \
 
 ################################################################################
 #  STEP 3:  Combine histograms with hadd.
+#           For reconstructed histogram files:
 #             -- combine histograms into a single file for each final state
+#             -- the "*" below is a wildcard for all run numbers 
+#           For thrown histogram files:
+#             -- combine histograms into a single file
 #             -- the "*" below is a wildcard for all run numbers 
 ################################################################################
 
@@ -60,6 +79,8 @@ time SOMEPATH/root/bin/hadd \
 #                  https://github.com/remitche66/FSRoot.git   
 #             -- also makes a system call to pdflatex
 #             -- run once for each final state
+#              IN PROGRESS:
+#             -- (doesn't currently incorporate the thrown tree information)
 ################################################################################
 
 time SOMEPATH/GlueXSurvey/surveyHistToLatex \
