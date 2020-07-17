@@ -13,12 +13,11 @@
 #             -- will exit with no output root file if the final state is not supported
 #             -- run separately over each run and each final state
 #           For thrown trees:
+#             -- cut arguments (-chi2, -shQuality, etc.) are ignored
 #             -- run separately over each run
 ################################################################################
 
-# For reconstructed trees:
-
-  time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
+time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
            -chi2 25 \
            -numUnusedTracks 1 \
            -numUnusedNeutrals 2 \
@@ -27,11 +26,6 @@
            -in INPUTDIR/BASENAME.root \
            -out OUTPUTDIR/BASENAME_flat.root
 
-# For thrown trees:
-
-  time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
-           -in INPUTDIR/BASENAME.root \
-           -out OUTPUTDIR/BASENAME_flat.root
 
 
 ################################################################################
