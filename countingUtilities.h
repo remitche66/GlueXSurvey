@@ -51,14 +51,17 @@ TH1F* getTH1FFromHistFile(TString histFileName, TString histName);
 pair<THStack*,TLegend*> getTHStFromHistFile(TString histFileName, TString histName);
 void setMCComponentsFromTreeFile(TString treeFileName);
 void setMCComponentsFromHistFile(TString histFileName);
+void setMCComponentsGen(TString histFileName, int bin1 = 1, int bin2 = 140);
 void writeHistograms(TString treeFileName, TString histFileName);
 TString fsCodeFromHistFile(TString histFileName);
 pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TString histType, TString outputFigures);
 pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures);
 void makePDF(TString histFileName, TString outputDirectory, TString baseName);
+void makePDFGen(TString histFileName, TString outputDirectory, TString baseName);
 bool isMCFromTreeFile(TString treeFileName);
 bool isMCThrownFromTreeFile(TString treeFileName);
 bool isMCFromHistFile(TString histFileName);
+bool isMCThrownFromHistFile(TString histFileName);
 void drawZeroLine(TH1F* hist);
 int color(int color);
 

@@ -12,6 +12,11 @@ map<TString,int> particleOrder;
   // global map from submode to list of mc components
 map< TString, vector<TString> > mcComponentsMap; 
 
+  // global information for generated numbers of events
+map< TString, int > mcComponentsGenMap;  // from mc component to #events
+vector<TString> mcComponentsGenVector;  // ordered list of mc components
+
+
   // global map from hist files to fs codes (to save time)
 map< TString, TString > histFileNameToFSCodeMap;
 
@@ -190,6 +195,7 @@ TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode, TString hist
     TString listX(getComboFormat(miX,modeCode3));
     FSCut::defineCut("T","(-1*MASS2("+listX+";GLUEXBEAM)<0.5)&&(REnPB>8.0)");
     if (histType == "T") FSCut::defineCut("T","(REnPB>8.0)");
+    if (histType == "EBEAM") FSCut::defineCut("T","(-1*MASS2("+listX+";GLUEXBEAM)<0.5)");
   }
   if (iCHI2 != 0){
     FSCut::defineCut("Chi2DOF","Chi2DOF<5.0","Chi2DOF>10.0&&Chi2DOF<15.0",1.0);
@@ -360,6 +366,7 @@ TH1F* getTH1FFromTreeFile(TString fileName, TString treeName, TString histName){
   TString title("#gamma p^{+} #rightarrow "); 
   TString fsTitle = FSString::rootSymbols(getDescription(FSModeInfo(modeCode1,modeCode2),modeCode3));
   if (fsTitle == "") fsTitle = FSString::rootSymbols(FSModeHistogram::formatMCComponent(mcComponent));
+  if (fsTitle == "") fsTitle = "anything";
   title += fsTitle;
     // get the cuts
   TString CUTS = getSubModeCuts(modeCode3)+"&&"+
@@ -631,6 +638,38 @@ void setMCComponentsFromHistFile(TString histFileName){
          << " DONE SETTING MC COMPONENTS FOR SUBMODE = " << getDescription(mi,modeCode3) << "\n"
          << "*****************************************************" << endl;
   }
+}
+
+
+void setMCComponentsGen(TString histFileName, int bin1, int bin2){
+  setModeCode3ParticlesEtc();
+  if (!isMCFromHistFile(histFileName)) {cout << "not mc" << endl; exit(0);}
+  vector<TString> keys; keys.push_back("_FS_"); keys.push_back("_MC_"); keys.push_back("_CUTS_");
+  vector<TString> histograms = FSTree::getTObjNamesFromFile(histFileName,"TH1F","hist_FS_0_0_0_MC_*_CUTS_*");
+  mcComponentsGenVector.clear();
+  mcComponentsGenMap.clear();
+  for (unsigned int i = 0; i < histograms.size(); i++){
+    map<TString,TString> parseMap = FSString::parseTStringToMap1(histograms[i],keys);
+    TString mcComponent = parseMap["_MC_"];
+    int number = FSHistogram::getTH1F(histFileName,histograms[i])->Integral(bin1,bin2);
+    if (number > 0){
+      mcComponentsGenMap[mcComponent] = number;
+      mcComponentsGenVector.push_back(mcComponent);
+    }
+  }
+  if (mcComponentsGenVector.size() < 2) return;
+  for (unsigned int i = 0; i < mcComponentsGenVector.size()-1; i++){
+  for (unsigned int j = i+1; j < mcComponentsGenVector.size(); j++){
+    if (mcComponentsGenMap[mcComponentsGenVector[i]] < mcComponentsGenMap[mcComponentsGenVector[j]]){
+      TString temp = mcComponentsGenVector[i];
+      mcComponentsGenVector[i] = mcComponentsGenVector[j];
+      mcComponentsGenVector[j] = temp;
+    }
+  }}
+for (unsigned int i = 0; i < mcComponentsGenVector.size(); i++){
+cout << mcComponentsGenMap[mcComponentsGenVector[i]] << "\t" << mcComponentsGenVector[i] << endl;
+cout << "      latex format =  " <<   FSString::latexSymbols(FSModeHistogram::formatMCComponent(mcComponentsGenVector[i])) << endl;
+}
 }
 
 
@@ -1221,6 +1260,87 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
 }
 
 
+
+void makePDFGen(TString histFileName, TString outputDirectory, TString baseName){
+  setModeCode3ParticlesEtc();
+  bool isMC = isMCFromHistFile(histFileName);
+  bool isMCThrown = isMCThrownFromHistFile(histFileName);
+  if (!isMC) return;
+  if (!isMCThrown) return;
+  outputDirectory = FSSystem::getAbsolutePath(outputDirectory,false);
+  if (outputDirectory == ""){ cout << "problem with output directory" << endl; exit(0); }
+  outputDirectory = outputDirectory + "/" + baseName;
+  if (FSSystem::getAbsolutePath(outputDirectory,false) != "")
+    { cout << "directory already exists: " << outputDirectory << endl; 
+      cout << "WARNING, replacing it!" << endl;  system("rm -rf "+outputDirectory);}
+  cout << "Creating PDF directory:     " << outputDirectory << endl;
+  system("mkdir "+outputDirectory);
+  TString latexFile = outputDirectory + "/"+baseName+".tex";
+  cout << "Creating latex file:        " << latexFile << endl;
+  FSString::latexHeader(latexFile);
+  FSString::writeTStringToFile(latexFile,
+    "\n\n"
+    "\\title{\\vspace{-2cm}Tables of Generated Final States}\n"
+    "\\author{}\n"
+    "\\date{\\vspace{-1cm}\\today}\n"
+    "\\maketitle\n\n"
+    "\\tableofcontents\n\n");
+  //FSString::writeTStringToFile(latexFile,
+  //  "\\newpage\n\n"
+  //  "\\section{Notes on Conventions}\n\n"
+  //  " Final states consist of combinations of.... \n");
+  for (int ibeam = 0; ibeam < 1; ibeam++){
+  if (ibeam == 0) setMCComponentsGen(histFileName,1,140);
+  if (ibeam == 1) setMCComponentsGen(histFileName,1,80);
+  int nGen = mcComponentsGenMap["0_0_0"];
+  if (ibeam == 0)
+  FSString::writeTStringToFile(latexFile,
+    "\\newpage\n\n"
+    "\\section{All Beam Energies}\n\n");
+  if (ibeam == 1)
+  FSString::writeTStringToFile(latexFile,
+    "\\newpage\n\n"
+    "\\section{Beam Energies Above 8 GeV}\n\n");
+  for (unsigned int icomp = 0; icomp < mcComponentsGenVector.size(); icomp++){
+    if (icomp%35 == 0 && icomp != 0)
+    FSString::writeTStringToFile(latexFile,
+      "\\end{tabular}"
+      "\n\n\\newpage\n\n");
+    if (icomp%35 == 0)
+    FSString::writeTStringToFile(latexFile,
+      "\\begin{tabular}{|l|c|c|}\n"
+      "\\hline\n"
+      "Final State & Generated Events & Fraction of Total \\\\ \n"
+      "\\hline\n");
+    TString mcComp = mcComponentsGenVector[icomp];
+    bool okCharge = (mcComp == "0_0_0") || (FSModeInfo(mcComp).modeCharge() == 1);
+    TString sFS = FSString::latexSymbols(FSModeHistogram::formatMCComponent(mcComp));
+    if (sFS == "") sFS = "\\mathrm{ALL}";
+    int nEvents = mcComponentsGenMap[mcComp];
+    TString sEvents = FSString::int2TString(nEvents);
+    double fraction = (double)nEvents/(double)nGen;
+    TString sFraction = FSString::double2TString(fraction*100)+"\\%";
+    if (fraction < 0.01) sFraction = "$"+FSString::double2TString(fraction,3,-1)+"$";
+    TString color1 = ""; TString color2 = "";
+    if (!okCharge){ color1 = "{\\color{red} "; color2 = "}"; }
+    FSString::writeTStringToFile(latexFile,
+      color1+"$"+sFS+"$"+color2 +
+      " & "+color1+sEvents+color2+" & "+color1+sFraction+color2+" \\\\ \n"
+      "\\hline\n");
+  }
+  FSString::writeTStringToFile(latexFile,
+    "\\hline\n"
+    "\\end{tabular}\n\n");
+  }
+//map< TString, int > mcComponentsGenMap;  // from mc component to #events
+//vector<TString> mcComponentsGenVector;  // ordered list of mc components
+  FSString::latexCloser(latexFile);
+  system("pdflatex -output-directory "+outputDirectory+" "+latexFile);
+  system("pdflatex -output-directory "+outputDirectory+" "+latexFile);
+  system("pdflatex -output-directory "+outputDirectory+" "+latexFile);
+}
+
+
 bool isMCFromTreeFile(TString treeFileName){
   TString FN(treeFileName);
   TString NT(FSTree::getTreeNameFromFile(FN));
@@ -1237,8 +1357,13 @@ bool isMCThrownFromTreeFile(TString treeFileName){
 }
 
 bool isMCFromHistFile(TString histFileName){
-  if (FSTree::getTObjNamesFromFile(histFileName,"TH1F","*_MC_*").size() == 0) return false;
-  return true;
+  if (FSTree::getTObjNamesFromFile(histFileName,"TH1F","*_MC_*").size() != 0) return true;
+  return false;
+}
+
+bool isMCThrownFromHistFile(TString histFileName){
+  if (FSTree::getTObjNamesFromFile(histFileName,"TH1F","*_MC_*_CUTS_*0_EBEAM").size() != 0) return true;
+  return false;
 }
 
 void drawZeroLine(TH1F* hist){
