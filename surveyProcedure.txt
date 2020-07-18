@@ -33,7 +33,7 @@ time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
 #             -- uses GlueXSurvey/surveyFSTreeToHist
 #             -- available in GitHub:
 #                  https://github.com/remitche66/GlueXSurvey.git
-#             -- depends on FSRoot (tag version >= v2.3): 
+#             -- depends on FSRoot (tag version >= v2.4): 
 #                  https://github.com/remitche66/FSRoot.git   
 #             -- output is a histogram file
 #           For reconstructed trees:
@@ -59,7 +59,7 @@ time SOMEPATH/GlueXSurvey/surveyFSTreeToHist \
 ################################################################################
 
 time SOMEPATH/root/bin/hadd \
-        OUTPUTDIR/BASENAME.hist \
+        OUTPUTDIR/BASENAME_survey.hist \
         INPUTDIR/BASENAME_*_survey.hist
 
 
@@ -73,12 +73,20 @@ time SOMEPATH/root/bin/hadd \
 #                  https://github.com/remitche66/FSRoot.git   
 #             -- also makes a system call to pdflatex
 #             -- run once for each final state
-#              IN PROGRESS:
-#             -- (doesn't currently incorporate the thrown tree information)
+#           For reconstructed MC:
+#             -- for bggen MC also use the argument -in2 to specify a file with
+#                  thrown histograms (produced in step 3)
+#                 -- this will produce a table of production rates and efficiencies
+#                 -- without this argument, the table is not produced
+#           For thrown MC:
+#             -- if the input histogram file is for thrown histograms, the
+#                  output PDF is a table of generated final states
 ################################################################################
 
 time SOMEPATH/GlueXSurvey/surveyHistToLatex \
-        -in INPUTDIR/BASENAME.hist \
+        -in INPUTDIR/BASENAME_survey.hist \
+           (-in2 is optional for bggen MC)
+        -in2 THROWNDIR/BASENAME_survey.hist \
         -dir OUTPUTDIR \
         -name BASENAME
 

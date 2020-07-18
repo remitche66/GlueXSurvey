@@ -56,7 +56,7 @@ void writeHistograms(TString treeFileName, TString histFileName);
 TString fsCodeFromHistFile(TString histFileName);
 pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TString histType, TString outputFigures);
 pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures);
-void makePDF(TString histFileName, TString outputDirectory, TString baseName);
+void makePDF(TString histFileName, TString histFileName2, TString outputDirectory, TString baseName);
 void makePDFGen(TString histFileName, TString outputDirectory, TString baseName);
 bool isMCFromTreeFile(TString treeFileName);
 bool isMCThrownFromTreeFile(TString treeFileName);

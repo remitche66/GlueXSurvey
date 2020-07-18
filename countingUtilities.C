@@ -602,12 +602,12 @@ void setMCComponentsFromHistFile(TString histFileName){
          << " SETTING MC COMPONENTS FOR SUBMODE = " << getDescription(mi,modeCode3) << "\n"
          << "*****************************************************" << endl;
     vector< pair<TString,float> > mcComponents1;
-    TH1F* hTot = FSHistogram::getTH1F(histFileName,"hist_FS_"+subMode+"_MC_0_0_0_CUTS_011_T");
+    TH1F* hTot = FSHistogram::getTH1F(histFileName,"hist_FS_"+subMode+"_MC_0_0_0_CUTS_011_EBEAM");
     if (!hTot){ cout << "histogram problem" << endl; exit(0); }
     double nTot = hTot->GetEntries();
     cout << "TOTAL ENTRIES = " << nTot << endl; 
     if (nTot <= 0.0){ nTot = 1.0; }
-    vector<TString> histograms = FSTree::getTObjNamesFromFile(histFileName,"TH1F","hist_FS_"+subMode+"_MC_*_CUTS_011_T");
+    vector<TString> histograms = FSTree::getTObjNamesFromFile(histFileName,"TH1F","hist_FS_"+subMode+"_MC_*_CUTS_011_EBEAM");
     if (histograms.size() == 0){ cout << "histogram problem" << endl; exit(0); }
     for (unsigned int j = 0; j < histograms.size(); j++){
       map<TString,TString> parseMap = FSString::parseTStringToMap1(histograms[j],keys);
@@ -1095,10 +1095,19 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
 }
 
 
-void makePDF(TString histFileName, TString outputDirectory, TString baseName){
+void makePDF(TString histFileName, TString histFileName2, TString outputDirectory, TString baseName){
   setModeCode3ParticlesEtc();
   bool isMC = isMCFromHistFile(histFileName);
-  if (isMC) setMCComponentsFromHistFile(histFileName);
+  TString genFileName("");
+  int numGenerated = 0;
+  if (isMC){
+    setMCComponentsFromHistFile(histFileName);
+    if (isMCThrownFromHistFile(histFileName2)){
+      genFileName = histFileName2;
+      numGenerated = FSHistogram::getTH1F(genFileName,"hist_FS_0_0_0_MC_0_0_0_CUTS_000_EBEAM")->GetEntries();
+    }
+    if (isMCThrownFromHistFile(histFileName)) return;
+  }
   TString fsCode = fsCodeFromHistFile(histFileName);
   FSModeInfo miFS(fsCode);
   TString fsDescription(getDescription(miFS,0));
@@ -1151,6 +1160,79 @@ void makePDF(TString histFileName, TString outputDirectory, TString baseName){
       "\\newpage\n\n"
       "\\section{Histograms for $"+
       FSString::root2latexSymbols(FSString::rootSymbols(getDescription(mi,modeCode3List[i])))+"$}\n");
+
+    if (isMC && genFileName != "" && numGenerated > 0){
+      FSString::writeTStringToFile(latexFile,
+        "\\subsection{Table of Rates and Efficiencies}\n\n");
+      FSString::writeTStringToFile(latexFile,
+        "Total number of generated events = " + FSString::int2TString(numGenerated) +
+        ".\n\n");
+      FSString::writeTStringToFile(latexFile,
+        "\\begin{tabular}{|l|c|c|c|c|}\n"
+        "\\hline\n"
+        "             & Production & Reconstruction & Reconstruction &             \\\\ \n"
+        " Final State &  Rate      &  Rate          &  Rate          & Composition \\\\ \n"
+        "             &            &  (in time)     & (subtracted)   &             \\\\ \n"
+        "\\hline\n");
+      vector<TString> mcComponents = mcComponentsMap[subMode];
+      TH1F* hTOTgen = getTH1FFromHistFile(genFileName,"hist_FS_0_0_0_MC_0_0_0_CUTS_000_EBEAM");
+      TH1F* hTOTrec1 = getTH1FFromHistFile(histFileName,"hist_FS_"+subMode+"_MC_0_0_0_CUTS_011_EBEAM");
+      TH1F* hTOTrec2 = getTH1FFromHistFile(histFileName,"hist_FS_"+subMode+"_MC_0_0_0_CUTS_01S_EBEAM");
+      if (!hTOTgen||!hTOTrec1||!hTOTrec2){ cout << "gen histogram problem" << endl; exit(0); }
+      double nTOTgen  = hTOTgen->Integral(1,140);
+      double nTOTrec1 = hTOTrec1->Integral(1,140);
+      double nTOTrec2 = hTOTrec2->Integral(1,140);
+      double nFSGenAll = 0.0; double nFSrec1All = 0.0; double nFSrec2All = 0.0;
+      for (unsigned int icomp = 0; icomp < mcComponents.size(); icomp++){
+        TString mcComp = mcComponents[icomp];
+        TString sFS = FSString::latexSymbols(FSModeHistogram::formatMCComponent(mcComp));
+        TH1F* hFSgen  = getTH1FFromHistFile(genFileName,"hist_FS_0_0_0_MC_"+mcComp+"_CUTS_000_EBEAM");
+        TH1F* hFSrec1  = getTH1FFromHistFile(histFileName,"hist_FS_"+subMode+"_MC_"+mcComp+"_CUTS_011_EBEAM");
+        TH1F* hFSrec2  = getTH1FFromHistFile(histFileName,"hist_FS_"+subMode+"_MC_"+mcComp+"_CUTS_01S_EBEAM");
+        if (!hFSgen||!hFSrec1||!hFSrec2){ cout << "gen histogram problem" << endl; exit(0); }
+        double nFSGen = hFSgen->Integral(1,140);   nFSGenAll  += nFSGen;
+        double nFSrec1 = hFSrec1->Integral(1,140); nFSrec1All += nFSrec1;
+        double nFSrec2 = hFSrec2->Integral(1,140); nFSrec2All += nFSrec2;
+        if (nTOTgen <= 0 || nFSGen <= 0 || nTOTrec2 <= 0){ cout << "gen numbers problem" << endl; continue; }
+        double prod = nFSGen/nTOTgen;
+        double rec1 = nFSrec1/nFSGen;
+        double rec2 = nFSrec2/nFSGen;
+        double cmp2 = nFSrec2/nTOTrec2;
+        TString sprod = FSString::double2TString(prod*100)+"\\%"; if (prod < 0.01) sprod = "$"+FSString::double2TString(prod,3,-1)+"$";
+        TString srec1 = FSString::double2TString(rec1*100)+"\\%"; if (rec1 < 0.01) srec1 = "$"+FSString::double2TString(rec1,3,-1)+"$";
+        TString srec2 = FSString::double2TString(rec2*100)+"\\%"; if (rec2 < 0.01) srec2 = "$"+FSString::double2TString(rec2,3,-1)+"$";
+        TString scmp2 = FSString::double2TString(cmp2*100)+"\\%"; if (cmp2 < 0.01) scmp2 = "$"+FSString::double2TString(cmp2,3,-1)+"$";
+        FSString::writeTStringToFile(latexFile,
+          "$"+sFS+"$"+
+          " & "+sprod+
+          " & "+srec1+
+          " & "+srec2+
+          " & "+scmp2+
+          " \\\\ \n"
+          "\\hline\n");
+      }
+      double prod = (nTOTgen - nFSGenAll)/nTOTgen;
+      double rec1 = 0.0; if ((nTOTgen - nFSGenAll)>0) rec1 = (nTOTrec1 - nFSrec1All)/(nTOTgen - nFSGenAll);
+      double rec2 = 0.0; if ((nTOTgen - nFSGenAll)>0) rec2 = (nTOTrec2 - nFSrec2All)/(nTOTgen - nFSGenAll);
+      double cmp2 = (nTOTrec2 - nFSrec2All)/nTOTrec2;
+      TString sprod = FSString::double2TString(prod*100)+"\\%"; if (prod < 0.01) sprod = "$"+FSString::double2TString(prod,3,-1)+"$";
+      TString srec1 = FSString::double2TString(rec1*100)+"\\%"; if (rec1 < 0.01) srec1 = "$"+FSString::double2TString(rec1,3,-1)+"$";
+      TString srec2 = FSString::double2TString(rec2*100)+"\\%"; if (rec2 < 0.01) srec2 = "$"+FSString::double2TString(rec2,3,-1)+"$";
+      TString scmp2 = FSString::double2TString(cmp2*100)+"\\%"; if (cmp2 < 0.01) scmp2 = "$"+FSString::double2TString(cmp2,3,-1)+"$";
+      FSString::writeTStringToFile(latexFile,
+        "other"
+        " & "+sprod+
+        " & "+srec1+
+        " & "+srec2+
+        " & "+scmp2+
+        " \\\\ \n"
+        "\\hline\n");
+      FSString::writeTStringToFile(latexFile,
+        "\\hline\n"
+        "\\end{tabular}\n\n");
+      FSString::writeTStringToFile(latexFile,
+        "\\newpage\n\n");
+    }
 
     histInfo = makeFigure(histFileName,subMode,"RFTIME",outputFigures);
     FSString::writeTStringToFile(latexFile,
