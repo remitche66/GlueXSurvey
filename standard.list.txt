@@ -1,0 +1,59 @@
+Standard Decay Modes For GlueX
+---------------------------------
+KPI30: modes with kaons and pions
+  1.  p+  pi0  pi0 
+  2.  p+  pi0  pi0  pi0 
+  3.  p+  pi+  pi- 
+  4.  p+  pi+  pi-  pi0 
+  5.  p+  pi+  pi-  pi0  pi0 
+  6.  p+  pi+  pi-  pi0  pi0  pi0 
+  7.  p+  pi+  pi+  pi-  pi- 
+  8.  p+  pi+  pi+  pi-  pi-  pi0 
+  9.  p+  pi+  pi+  pi-  pi-  pi0  pi0 
+  10.  p+  pi+  pi+  pi+  pi-  pi-  pi- 
+  11.  p+  Ks  Ks 
+  12.  p+  Ks  Ks  pi0 
+  13.  p+  Ks  Ks  pi0  pi0 
+  14.  p+  Ks  Ks  pi+  pi- 
+  15.  p+  K-  Ks  pi+ 
+  16.  p+  K-  Ks  pi+  pi0 
+  17.  p+  K-  Ks  pi+  pi0  pi0 
+  18.  p+  K-  Ks  pi+  pi+  pi- 
+  19.  p+  K+  Ks  pi- 
+  20.  p+  K+  Ks  pi-  pi0 
+  21.  p+  K+  Ks  pi-  pi0  pi0 
+  22.  p+  K+  Ks  pi+  pi-  pi- 
+  23.  p+  K+  K- 
+  24.  p+  K+  K-  pi0 
+  25.  p+  K+  K-  pi0  pi0 
+  26.  p+  K+  K-  pi0  pi0  pi0 
+  27.  p+  K+  K-  pi+  pi- 
+  28.  p+  K+  K-  pi+  pi-  pi0 
+  29.  p+  K+  K-  pi+  pi-  pi0  pi0 
+  30.  p+  K+  K-  pi+  pi+  pi-  pi- 
+ETA12: additional modes with etas
+  1.  p+  pi0  eta 
+  2.  p+  pi0  pi0  eta 
+  3.  p+  pi+  pi-  eta 
+  4.  p+  pi+  pi-  pi0  eta 
+  5.  p+  pi+  pi-  pi0  pi0  eta 
+  6.  p+  pi+  pi+  pi-  pi-  eta 
+  7.  p+  Ks  Ks  eta 
+  8.  p+  K+  K-  eta 
+  9.  p+  eta  eta 
+  10.  p+  pi0  eta  eta 
+  11.  p+  pi+  pi-  eta  eta 
+  12.  p+  pi+  pi-  pi0  eta  eta 
+LAMBDA12: additional modes with lambdas
+  1.  Lambda  Ks  pi+ 
+  2.  Lambda  Ks  pi+  pi0 
+  3.  Lambda  Ks  pi+  pi+  pi- 
+  4.  Lambda  K+ 
+  5.  Lambda  K+  pi0 
+  6.  Lambda  K+  pi+  pi- 
+  7.  Lambda  K+  pi+  pi-  pi0 
+  8.  Lambda  Ks  pi+  eta 
+  9.  Lambda  Ks  pi+  pi0  eta 
+  10.  Lambda  K+  eta 
+  11.  Lambda  K+  pi0  eta 
+  12.  Lambda  K+  pi+  pi-  eta 
