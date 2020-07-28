@@ -69,7 +69,7 @@ time SOMEPATH/root/bin/hadd \
 #             -- uses GlueXSurvey/surveyHistToLatex
 #             -- available in GitHub:
 #                  https://github.com/remitche66/GlueXSurvey.git
-#             -- depends on FSRoot (tag version >= v2.3): 
+#             -- depends on FSRoot (tag version >= v2.4): 
 #                  https://github.com/remitche66/FSRoot.git   
 #             -- also makes a system call to pdflatex
 #             -- run once for each final state
