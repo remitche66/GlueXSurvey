@@ -1102,7 +1102,7 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
   int numGenerated = 0;
   if (isMC){
     setMCComponentsFromHistFile(histFileName);
-    if (isMCThrownFromHistFile(histFileName2)){
+    if (histFileName2 != "" && isMCThrownFromHistFile(histFileName2)){
       genFileName = histFileName2;
       numGenerated = FSHistogram::getTH1F(genFileName,"hist_FS_0_0_0_MC_0_0_0_CUTS_000_EBEAM")->GetEntries();
     }
@@ -1444,6 +1444,7 @@ bool isMCFromHistFile(TString histFileName){
 }
 
 bool isMCThrownFromHistFile(TString histFileName){
+  if (histFileName == "") return false;
   if (FSTree::getTObjNamesFromFile(histFileName,"TH1F","*_MC_*_CUTS_*0_EBEAM").size() != 0) return true;
   return false;
 }
