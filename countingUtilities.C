@@ -363,7 +363,7 @@ TH1F* getTH1FFromTreeFile(TString fileName, TString treeName, TString histName){
   TString histType = parts[7+iMC];
   TString fsCode = addModeCode3(FSModeInfo(modeCode1,modeCode2),modeCode3).modeString();
   FSModeCollection::clear();  FSModeCollection::addModeInfo(fsCode);
-  TString title("#gamma p^{+} #rightarrow "); 
+  TString title("#gamma p #rightarrow "); 
   TString fsTitle = FSString::rootSymbols(getDescription(FSModeInfo(modeCode1,modeCode2),modeCode3));
   if (fsTitle == "") fsTitle = FSString::rootSymbols(FSModeHistogram::formatMCComponent(mcComponent));
   if (fsTitle == "") fsTitle = "anything";
