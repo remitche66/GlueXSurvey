@@ -198,10 +198,10 @@ TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode, TString hist
     if (histType == "EBEAM") FSCut::defineCut("T","(-1*MASS2("+listX+";GLUEXBEAM)<0.5)");
   }
   if (iCHI2 != 0){
-    FSCut::defineCut("Chi2DOF","Chi2DOF<5.0","Chi2DOF>10.0&&Chi2DOF<15.0",1.0);
+    FSCut::defineCut("Chi2DOF","Chi2DOF<5.0","Chi2DOF>10.0&&Chi2DOF<15.0",1.0/5.0);
   }
   if (iRFTIME != 0){
-    FSCut::defineCut("RFDeltaT","abs(RFDeltaT)<2.0","abs(RFDeltaT)>2.0&&abs(RFDeltaT)<10.0",1.0/4.0);
+    FSCut::defineCut("RFDeltaT","abs(RFDeltaT)<2.0","abs(RFDeltaT)>2.0&&abs(RFDeltaT)<6.0",1.0/2.0);
   }
   TString cuts("");
   if (iT == 0)     {if (cuts != "") cuts += "&&"; cuts += "(1==1)"; }
@@ -1127,7 +1127,7 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
   FSString::latexHeader(latexFile);
   FSString::writeTStringToFile(latexFile,
     "\n\n"
-    "\\title{\\vspace{-2cm}Histograms for $\\gamma p^{+} \\to "+
+    "\\title{\\vspace{-2cm}Histograms for $\\gamma p \\to "+
       FSString::root2latexSymbols(FSString::rootSymbols(fsDescription))+"$}\n"
     "\\author{}\n"
     "\\date{\\vspace{-1cm}\\today}\n"
@@ -1136,20 +1136,29 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
   FSString::writeTStringToFile(latexFile,
     "\\newpage\n\n"
     "\\section{Notes on Selection Criteria}\n\n"
-    " Cuts applied in addition to those applied during the analysis launch:\n"
+    " The following cuts are applied in addition to those applied during the analysis launch:\n"
     " \\begin{itemize}\n"
-    "  \\item Cuts on $\\chi^2$/DOF, $t$, RF timing, and beam energy are described\n"
-    "           in the captions under the figures. "
     "  \\item The number of unused tracks is $\\le 1$.\n"
     "  \\item The number of unused neutrals is $\\le 2$.\n"
     "  \\item All photons have a shower quality $>0.5$.\n"
     "  \\item Cuts on all intermediate state masses are 50~MeV wide,\n"
     "  including $\\pi^0$, $\\eta$, $K_{S}$, and $\\Lambda$ masses (when not constrained).\n"
-    // "  \\item Photon combinations not from a $\\pi^0$ are vetoed if they land in a 50~MeV wide window\n"
-    // "    around the $\\pi^0$ mass.\n" 
+    "  \\item The captions under the figures indicate when cuts on RF timing, $\\chi^2$/dof, $t$,\n" 
+    "          and beam energy are used.  When they are used, the cuts are:\n"
+    "     \\begin{itemize}\n"
+    "         \\item One beam bunch on either side of the RF signal peak is used for subtracting \n"
+    "                  out-of-time accidentals.\n"
+    "         \\item For the $\\chi^2$/dof of the kinematic fit,\n"
+    "                the signal region is defined as $\\chi^2/\\mathrm{dof}<5$ \n"
+    "                and the sideband region is $10<\\chi^2/\\mathrm{dof}<15$. \n"
+    "                The sideband region is scaled down by a factor of 5, based on rough \n"
+    "                   observations of the way some backgrounds behave. \n"
+    "         \\item Low $|t|$ is defined as $|t|<0.5$~GeV$^{2}$. \n"
+    "         \\item High $E_{\\mathrm{beam}}$ is defined as $E_{\\mathrm{beam}}>8$~GeV. \n"
+    "     \\end{itemize}\n"
     " \\end{itemize}\n");
   if (isMC) FSString::writeTStringToFile(latexFile,
-    "The following plots are for MC (add more information).\n");
+    "The following plots are for bggen MC.\n");
   vector<int> modeCode3List = getModeCode3List(miFS);
   for (unsigned int i = 0; i < modeCode3List.size(); i++){
     FSModeInfo mi = addModeCode3(miFS,modeCode3List[i],-1);
