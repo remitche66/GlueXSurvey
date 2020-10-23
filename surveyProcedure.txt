@@ -17,7 +17,7 @@
 #             -- run separately over each run
 ################################################################################
 
-time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
+SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
            -chi2 25 \
            -numUnusedTracks 1 \
            -numUnusedNeutrals 2 \
@@ -42,7 +42,7 @@ time SOMEPATH/hd_utilities/FlattenForFSRoot/flatten \
 #             -- run separately over each run
 ################################################################################
 
-time SOMEPATH/GlueXSurvey/surveyFSTreeToHist \
+SOMEPATH/GlueXSurvey/surveyFSTreeToHist \
         -in INPUTDIR/BASENAME_flat.root \
         -out OUTPUTDIR/BASENAME_survey.hist
 
@@ -58,7 +58,7 @@ time SOMEPATH/GlueXSurvey/surveyFSTreeToHist \
 #             -- the "*" below is a wildcard for all run numbers 
 ################################################################################
 
-time SOMEPATH/root/bin/hadd \
+SOMEPATH/root/bin/hadd \
         OUTPUTDIR/BASENAME_survey.hist \
         INPUTDIR/BASENAME_*_survey.hist
 
@@ -83,7 +83,7 @@ time SOMEPATH/root/bin/hadd \
 #                  output PDF is a table of generated final states
 ################################################################################
 
-time SOMEPATH/GlueXSurvey/surveyHistToLatex \
+SOMEPATH/GlueXSurvey/surveyHistToLatex \
         -in INPUTDIR/BASENAME_survey.hist \
            (-in2 is optional for bggen MC)
         -in2 THROWNDIR/BASENAME_survey.hist \
