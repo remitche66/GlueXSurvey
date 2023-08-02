@@ -727,7 +727,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstLowTSigChi2AllRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_110_RFTIME");
     TH1F* histLowTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_110_RFTIME");
-    FSHistogram::setHistogramMaxima(histLowTSigChi2AllRF);
+    FSHistogram::setHistogramMaxMin(histLowTSigChi2AllRF);
     histLowTSigChi2AllRF->Draw("");
     mcstLowTSigChi2AllRF.first->Draw("same");
     histLowTSigChi2AllRF->Draw("same");
@@ -736,7 +736,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstAllTSigChi2AllRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_010_RFTIME");
     TH1F* histAllTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_010_RFTIME");
-    FSHistogram::setHistogramMaxima(histAllTSigChi2AllRF);
+    FSHistogram::setHistogramMaxMin(histAllTSigChi2AllRF);
     histAllTSigChi2AllRF->Draw("");
     mcstAllTSigChi2AllRF.first->Draw("same");
     histAllTSigChi2AllRF->Draw("same");
@@ -754,7 +754,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstLowTAllChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_101_CHI2DOF");
     TH1F* histLowTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_101_CHI2DOF");
-    FSHistogram::setHistogramMaxima(histLowTAllChi2SigRF);
+    FSHistogram::setHistogramMaxMin(histLowTAllChi2SigRF);
     histLowTAllChi2SigRF->Draw("");
     mcstLowTAllChi2SigRF.first->Draw("same");
     histLowTAllChi2SigRF->Draw("same");
@@ -772,7 +772,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstAllTAllChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_001_CHI2DOF");
     TH1F* histAllTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_001_CHI2DOF");
-    FSHistogram::setHistogramMaxima(histAllTAllChi2SigRF);
+    FSHistogram::setHistogramMaxMin(histAllTAllChi2SigRF);
     histAllTAllChi2SigRF->Draw("");
     mcstAllTAllChi2SigRF.first->Draw("same");
     histAllTAllChi2SigRF->Draw("same");
@@ -800,7 +800,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstLowTSigChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_111_T");
     TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_T");
-    FSHistogram::setHistogramMaxima(histLowTSigChi2SigRF);
+    FSHistogram::setHistogramMaxMin(histLowTSigChi2SigRF);
     histLowTSigChi2SigRF->Draw("");
     mcstLowTSigChi2SigRF.first->Draw("same");
     histLowTSigChi2SigRF->Draw("same");
@@ -809,7 +809,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstLowTSigChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_11S_T");
     TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_T");
-    FSHistogram::setHistogramMaxima(histLowTSigChi2SubRF);
+    FSHistogram::setHistogramMaxMin(histLowTSigChi2SubRF);
     histLowTSigChi2SubRF->Draw("");
     mcstLowTSigChi2SubRF.first->Draw("same");
     histLowTSigChi2SubRF->Draw("same");
@@ -819,7 +819,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstAllTSigChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_011_T");
     TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_T");
-    FSHistogram::setHistogramMaxima(histAllTSigChi2SigRF);
+    FSHistogram::setHistogramMaxMin(histAllTSigChi2SigRF);
     histAllTSigChi2SigRF->Draw("");
     mcstAllTSigChi2SigRF.first->Draw("same");
     histAllTSigChi2SigRF->Draw("same");
@@ -828,7 +828,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstAllTSigChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_01S_T");
     TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_T");
-    FSHistogram::setHistogramMaxima(histAllTSigChi2SubRF);
+    FSHistogram::setHistogramMaxMin(histAllTSigChi2SubRF);
     histAllTSigChi2SubRF->Draw("");
     mcstAllTSigChi2SubRF.first->Draw("same");
     histAllTSigChi2SubRF->Draw("same");
@@ -848,7 +848,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstLowTSigChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_111_"+histType);
     TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_"+histType);
-    FSHistogram::setHistogramMaxima(histLowTSigChi2SigRF);
+    FSHistogram::setHistogramMaxMin(histLowTSigChi2SigRF);
     histLowTSigChi2SigRF->Draw("");
     mcstLowTSigChi2SigRF.first->Draw("same");
     histLowTSigChi2SigRF->Draw("same");
@@ -857,7 +857,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstLowTSigChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_11S_"+histType);
     TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_"+histType);
-    FSHistogram::setHistogramMaxima(histLowTSigChi2SubRF);
+    FSHistogram::setHistogramMaxMin(histLowTSigChi2SubRF);
     histLowTSigChi2SubRF->Draw("");
     mcstLowTSigChi2SubRF.first->Draw("same");
     histLowTSigChi2SubRF->Draw("same");
@@ -867,7 +867,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstAllTSigChi2SigRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_011_"+histType);
     TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_"+histType);
-    FSHistogram::setHistogramMaxima(histAllTSigChi2SigRF);
+    FSHistogram::setHistogramMaxMin(histAllTSigChi2SigRF);
     histAllTSigChi2SigRF->Draw("");
     mcstAllTSigChi2SigRF.first->Draw("same");
     histAllTSigChi2SigRF->Draw("same");
@@ -876,7 +876,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
     pair<THStack*,TLegend*>
           mcstAllTSigChi2SubRF = getTHStFromHistFile(histFileName,histIndexFS+"_CUTS_01S_"+histType);
     TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_"+histType);
-    FSHistogram::setHistogramMaxima(histAllTSigChi2SubRF);
+    FSHistogram::setHistogramMaxMin(histAllTSigChi2SubRF);
     histAllTSigChi2SubRF->Draw("");
     mcstAllTSigChi2SubRF.first->Draw("same");
     histAllTSigChi2SubRF->Draw("same");
@@ -915,7 +915,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(1);
     TH1F* histLowTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_110_RFTIME");
     TH1F* histLowTOutChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_120_RFTIME");
-    FSHistogram::setHistogramMaxima(histLowTSigChi2AllRF,histLowTOutChi2AllRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2AllRF,histLowTOutChi2AllRF});
     histLowTOutChi2AllRF->SetLineColor(color(7));
     histLowTOutChi2AllRF->SetFillStyle(3002);
     histLowTOutChi2AllRF->SetFillColor(color(7));
@@ -925,7 +925,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(2);
     TH1F* histAllTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_010_RFTIME");
     TH1F* histAllTOutChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_020_RFTIME");
-    FSHistogram::setHistogramMaxima(histAllTSigChi2AllRF,histAllTOutChi2AllRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2AllRF,histAllTOutChi2AllRF});
     histAllTOutChi2AllRF->SetLineColor(color(7));
     histAllTOutChi2AllRF->SetFillStyle(3002);
     histAllTOutChi2AllRF->SetFillColor(color(7));
@@ -945,7 +945,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(1);
     TH1F* histLowTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_101_CHI2DOF");
     TH1F* histLowTAllChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_102_CHI2DOF");
-    FSHistogram::setHistogramMaxima(histLowTAllChi2SigRF,histLowTAllChi2OutRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTAllChi2SigRF,histLowTAllChi2OutRF});
     histLowTAllChi2OutRF->SetLineColor(color(3));
     histLowTAllChi2OutRF->SetFillStyle(3002);
     histLowTAllChi2OutRF->SetFillColor(color(3));
@@ -959,7 +959,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(3);
     TH1F* histAllTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_001_CHI2DOF");
     TH1F* histAllTAllChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_002_CHI2DOF");
-    FSHistogram::setHistogramMaxima(histAllTAllChi2SigRF,histAllTAllChi2OutRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTAllChi2SigRF,histAllTAllChi2OutRF});
     histAllTAllChi2OutRF->SetLineColor(color(3));
     histAllTAllChi2OutRF->SetFillStyle(3002);
     histAllTAllChi2OutRF->SetFillColor(color(3));
@@ -983,7 +983,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(1);
     TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_T");
     TH1F* histLowTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_112_T");
-    FSHistogram::setHistogramMaxima(histLowTSigChi2SigRF,histLowTSigChi2OutRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2SigRF,histLowTSigChi2OutRF});
     histLowTSigChi2OutRF->SetLineColor(color(3));
     histLowTSigChi2OutRF->SetFillStyle(3002);
     histLowTSigChi2OutRF->SetFillColor(color(3));
@@ -993,8 +993,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(2);
     TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_T");
     TH1F* histLowTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_12S_T");
-    FSHistogram::setHistogramMaxima(histLowTSigChi2SubRF,histLowTOutChi2SubRF);
-    FSHistogram::setHistogramMinima(histLowTSigChi2SubRF,histLowTOutChi2SubRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2SubRF,histLowTOutChi2SubRF});
     histLowTOutChi2SubRF->SetLineColor(color(7));
     histLowTOutChi2SubRF->SetFillStyle(3002);
     histLowTOutChi2SubRF->SetFillColor(color(7));
@@ -1005,7 +1004,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(3);
     TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_T");
     TH1F* histAllTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_012_T");
-    FSHistogram::setHistogramMaxima(histAllTSigChi2SigRF,histAllTSigChi2OutRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2SigRF,histAllTSigChi2OutRF});
     histAllTSigChi2OutRF->SetLineColor(color(3));
     histAllTSigChi2OutRF->SetFillStyle(3002);
     histAllTSigChi2OutRF->SetFillColor(color(3));
@@ -1015,8 +1014,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(4);
     TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_T");
     TH1F* histAllTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_02S_T");
-    FSHistogram::setHistogramMaxima(histAllTSigChi2SubRF,histAllTOutChi2SubRF);
-    FSHistogram::setHistogramMinima(histAllTSigChi2SubRF,histAllTOutChi2SubRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2SubRF,histAllTOutChi2SubRF});
     histAllTOutChi2SubRF->SetLineColor(color(7));
     histAllTOutChi2SubRF->SetFillStyle(3002);
     histAllTOutChi2SubRF->SetFillColor(color(7));
@@ -1038,7 +1036,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(1);
     TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_"+histType);
     TH1F* histLowTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_112_"+histType);
-    FSHistogram::setHistogramMaxima(histLowTSigChi2SigRF,histLowTSigChi2OutRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2SigRF,histLowTSigChi2OutRF});
     histLowTSigChi2OutRF->SetLineColor(color(3));
     histLowTSigChi2OutRF->SetFillStyle(3002);
     histLowTSigChi2OutRF->SetFillColor(color(3));
@@ -1048,8 +1046,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(2);
     TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_"+histType);
     TH1F* histLowTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_12S_"+histType);
-    FSHistogram::setHistogramMaxima(histLowTSigChi2SubRF,histLowTOutChi2SubRF);
-    FSHistogram::setHistogramMinima(histLowTSigChi2SubRF,histLowTOutChi2SubRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2SubRF,histLowTOutChi2SubRF});
     histLowTOutChi2SubRF->SetLineColor(color(7));
     histLowTOutChi2SubRF->SetFillStyle(3002);
     histLowTOutChi2SubRF->SetFillColor(color(7));
@@ -1060,7 +1057,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(3);
     TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_"+histType);
     TH1F* histAllTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_012_"+histType);
-    FSHistogram::setHistogramMaxima(histAllTSigChi2SigRF,histAllTSigChi2OutRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2SigRF,histAllTSigChi2OutRF});
     histAllTSigChi2OutRF->SetLineColor(color(3));
     histAllTSigChi2OutRF->SetFillStyle(3002);
     histAllTSigChi2OutRF->SetFillColor(color(3));
@@ -1070,8 +1067,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(4);
     TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_"+histType);
     TH1F* histAllTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_02S_"+histType);
-    FSHistogram::setHistogramMaxima(histAllTSigChi2SubRF,histAllTOutChi2SubRF);
-    FSHistogram::setHistogramMinima(histAllTSigChi2SubRF,histAllTOutChi2SubRF);
+    FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2SubRF,histAllTOutChi2SubRF});
     histAllTOutChi2SubRF->SetLineColor(color(7));
     histAllTOutChi2SubRF->SetFillStyle(3002);
     histAllTOutChi2SubRF->SetFillColor(color(7));
