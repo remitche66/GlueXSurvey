@@ -203,7 +203,7 @@ TString getOtherCuts(FSModeInfo mi, int modeCode3, TString cutCode, TString hist
   if (iRFTIME != 0){
     FSCut::defineCut("RFDeltaT","abs(RFDeltaT)<2.0","abs(RFDeltaT)>2.0&&abs(RFDeltaT)<6.0",1.0/2.0);
   }
-  TString cuts("");
+  TString cuts("AND(VeeLSigmaP[Ks]>3.0)");
   if (iT == 0)     {if (cuts != "") cuts += "&&"; cuts += "(1==1)"; }
   if (iT == 1)     {if (cuts != "") cuts += "&&"; cuts += "CUT(T)"; }
   if (iCHI2 == 0)  {if (cuts != "") cuts += "&&"; cuts += "(1==1)"; }
