@@ -1120,14 +1120,11 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
   system("mkdir "+outputFigures);
   TString latexFile = outputDirectory + "/"+baseName+".tex";
   cout << "Creating latex file:        " << latexFile << endl;
-  FSString::latexHeader(latexFile);
+  FSString::latexHeader(latexFile, false, 
+      "Histograms for $\\gamma p \\to "+
+      FSString::root2latexSymbols(FSString::rootSymbols(fsDescription))+"$", "");
   FSString::writeTStringToFile(latexFile,
     "\n\n"
-    "\\title{\\vspace{-2cm}Histograms for $\\gamma p \\to "+
-      FSString::root2latexSymbols(FSString::rootSymbols(fsDescription))+"$}\n"
-    "\\author{}\n"
-    "\\date{\\vspace{-1cm}\\today}\n"
-    "\\maketitle\n\n"
     "\\tableofcontents\n\n");
   FSString::writeTStringToFile(latexFile,
     "\\newpage\n\n"
@@ -1364,13 +1361,9 @@ void makePDFGen(TString histFileName, TString outputDirectory, TString baseName)
   system("mkdir "+outputDirectory);
   TString latexFile = outputDirectory + "/"+baseName+".tex";
   cout << "Creating latex file:        " << latexFile << endl;
-  FSString::latexHeader(latexFile);
+  FSString::latexHeader(latexFile, false, "Tables of Generated Final States", "");
   FSString::writeTStringToFile(latexFile,
     "\n\n"
-    "\\title{\\vspace{-2cm}Tables of Generated Final States}\n"
-    "\\author{}\n"
-    "\\date{\\vspace{-1cm}\\today}\n"
-    "\\maketitle\n\n"
     "\\tableofcontents\n\n");
   //FSString::writeTStringToFile(latexFile,
   //  "\\newpage\n\n"
