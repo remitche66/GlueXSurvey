@@ -434,6 +434,7 @@ TH1F* getTH1FFromTreeFile(TString fileName, TString treeName, TString histName){
 
 
 TH1F* getTH1FFromHistFile(TString histFileName, TString histName){
+  TH1F* hsub = NULL;  if (histFileName == "") return hsub;
   bool isMC = histName.Contains("_MC_"); int iMC = 0; if (isMC) iMC = 4;
   vector<TString> parts = FSString::parseTString(histName,"_");
   if (parts[5+iMC] != "CUTS") { cout << "problem with histogram name" << endl; exit(0); }
@@ -450,7 +451,7 @@ TH1F* getTH1FFromHistFile(TString histFileName, TString histName){
   TString histNameOut(histName); histNameOut.Replace(histName.Index(cutCode),8,cutCodeOut);
   TH1F* hsig = (TH1F*)FSHistogram::getTH1F(histFileName,histNameSig)->Clone();
   TH1F* hout = (TH1F*)FSHistogram::getTH1F(histFileName,histNameOut)->Clone();
-  TH1F* hsub = new TH1F(*hsig);  hsub->Add(hout,-1.0);  
+  hsub = new TH1F(*hsig);  hsub->Add(hout,-1.0);  
   hsub->SetMinimum(-0.05*hsub->GetMaximum());
   memCache.push_back(hsig);
   memCache.push_back(hout);
@@ -897,7 +898,7 @@ pair<TString,TString> makeMCFigure(TString histFileName, TString subMode, TStrin
 }
 
 
-pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures){
+pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString histType, TString outputFigures, TString histCompName, double compScale){
   clearMemCache();
   setModeCode3ParticlesEtc();
   bool isMC = isMCFromHistFile(histFileName);
@@ -915,6 +916,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(1);
     TH1F* histLowTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_110_RFTIME");
     TH1F* histLowTOutChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_120_RFTIME");
+    TH1F* histLowTComChi2AllRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_110_RFTIME");
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2AllRF,histLowTOutChi2AllRF});
     histLowTOutChi2AllRF->SetLineColor(color(7));
     histLowTOutChi2AllRF->SetFillStyle(3002);
@@ -922,9 +924,13 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTSigChi2AllRF->Draw("");
     histLowTOutChi2AllRF->Draw("hist,same");
     histLowTSigChi2AllRF->Draw("same");
+    if (histLowTComChi2AllRF){histLowTComChi2AllRF->Scale(compScale); 
+                              histLowTComChi2AllRF->SetLineColor(kGray+1); 
+                              histLowTComChi2AllRF->Draw("hist,same");} 
     c1->cd(2);
     TH1F* histAllTSigChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_010_RFTIME");
     TH1F* histAllTOutChi2AllRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_020_RFTIME");
+    //TH1F* histAllTComChi2AllRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_010_RFTIME");
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2AllRF,histAllTOutChi2AllRF});
     histAllTOutChi2AllRF->SetLineColor(color(7));
     histAllTOutChi2AllRF->SetFillStyle(3002);
@@ -932,6 +938,9 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTSigChi2AllRF->Draw("");
     histAllTOutChi2AllRF->Draw("hist,same");
     histAllTSigChi2AllRF->Draw("same");
+    //if (histAllTComChi2AllRF){histAllTComChi2AllRF->Scale(compScale); 
+    //                          histAllTComChi2AllRF->SetLineColor(kGray+1); 
+    //                          histAllTComChi2AllRF->Draw("hist,same");} 
     caption = "Distributions of RF $\\Delta t$ "
               "for the $\\chi^2/\\mathrm{dof}<5$ signal region~(points) "
               "and the $10<\\chi^2/\\mathrm{dof}<15$ sideband region~(shaded). "
@@ -945,6 +954,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(1);
     TH1F* histLowTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_101_CHI2DOF");
     TH1F* histLowTAllChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_102_CHI2DOF");
+    TH1F* histLowTAllChi2ComRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_101_CHI2DOF");
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTAllChi2SigRF,histLowTAllChi2OutRF});
     histLowTAllChi2OutRF->SetLineColor(color(3));
     histLowTAllChi2OutRF->SetFillStyle(3002);
@@ -952,13 +962,21 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTAllChi2SigRF->Draw("");
     histLowTAllChi2OutRF->Draw("hist,same");
     histLowTAllChi2SigRF->Draw("same");
+    if (histLowTAllChi2ComRF){histLowTAllChi2ComRF->Scale(compScale); 
+                              histLowTAllChi2ComRF->SetLineColor(kGray+1); 
+                              histLowTAllChi2ComRF->Draw("hist,same");} 
     c1->cd(2);
     TH1F* histLowTAllChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_10S_CHI2DOF");
+          histLowTAllChi2ComRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_10S_CHI2DOF");
     histLowTAllChi2SubRF->Draw("");
     drawZeroLine(histLowTAllChi2SubRF);
+    if (histLowTAllChi2ComRF){histLowTAllChi2ComRF->Scale(compScale); 
+                              histLowTAllChi2ComRF->SetLineColor(kGray+1); 
+                              histLowTAllChi2ComRF->Draw("hist,same");} 
     c1->cd(3);
     TH1F* histAllTAllChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_001_CHI2DOF");
     TH1F* histAllTAllChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_002_CHI2DOF");
+    //TH1F* histAllTAllChi2ComRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_001_CHI2DOF");
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTAllChi2SigRF,histAllTAllChi2OutRF});
     histAllTAllChi2OutRF->SetLineColor(color(3));
     histAllTAllChi2OutRF->SetFillStyle(3002);
@@ -966,10 +984,17 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTAllChi2SigRF->Draw("");
     histAllTAllChi2OutRF->Draw("hist,same");
     histAllTAllChi2SigRF->Draw("same");
+    //if (histAllTAllChi2ComRF){histAllTAllChi2ComRF->Scale(compScale); 
+    //                          histAllTAllChi2ComRF->SetLineColor(kGray+1); 
+    //                          histAllTAllChi2ComRF->Draw("hist,same");} 
     c1->cd(4);
     TH1F* histAllTAllChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_00S_CHI2DOF");
+    //      histAllTAllChi2ComRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_00S_CHI2DOF");
     histAllTAllChi2SubRF->Draw("");
     drawZeroLine(histAllTAllChi2SubRF);
+    //if (histAllTAllChi2ComRF){histAllTAllChi2ComRF->Scale(compScale); 
+    //                          histAllTAllChi2ComRF->SetLineColor(kGray+1); 
+    //                          histAllTAllChi2ComRF->Draw("hist,same");} 
     caption = "Distributions of $\\chi^2$/dof.  "
               "TOP is low $|t|$~($|t|<0.5$~GeV$^{2}$) "
                    "and high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
@@ -983,6 +1008,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(1);
     TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_T");
     TH1F* histLowTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_112_T");
+    TH1F* histLowTSigChi2ComRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_111_T");
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2SigRF,histLowTSigChi2OutRF});
     histLowTSigChi2OutRF->SetLineColor(color(3));
     histLowTSigChi2OutRF->SetFillStyle(3002);
@@ -990,9 +1016,13 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTSigChi2SigRF->Draw("");
     histLowTSigChi2OutRF->Draw("hist,same");
     histLowTSigChi2SigRF->Draw("same");
+    if (histLowTSigChi2ComRF){histLowTSigChi2ComRF->Scale(compScale); 
+                              histLowTSigChi2ComRF->SetLineColor(kGray+1); 
+                              histLowTSigChi2ComRF->Draw("hist,same");} 
     c1->cd(2);
     TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_T");
     TH1F* histLowTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_12S_T");
+    TH1F* histLowTComChi2SubRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_11S_T");
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2SubRF,histLowTOutChi2SubRF});
     histLowTOutChi2SubRF->SetLineColor(color(7));
     histLowTOutChi2SubRF->SetFillStyle(3002);
@@ -1001,9 +1031,13 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTOutChi2SubRF->Draw("hist,same");
     histLowTSigChi2SubRF->Draw("same");
     drawZeroLine(histLowTSigChi2SubRF);
+    if (histLowTComChi2SubRF){histLowTComChi2SubRF->Scale(compScale); 
+                              histLowTComChi2SubRF->SetLineColor(kGray+1); 
+                              histLowTComChi2SubRF->Draw("hist,same");} 
     c1->cd(3);
     TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_T");
     TH1F* histAllTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_012_T");
+    //TH1F* histAllTSigChi2ComRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_011_T");
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2SigRF,histAllTSigChi2OutRF});
     histAllTSigChi2OutRF->SetLineColor(color(3));
     histAllTSigChi2OutRF->SetFillStyle(3002);
@@ -1011,9 +1045,13 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTSigChi2SigRF->Draw("");
     histAllTSigChi2OutRF->Draw("hist,same");
     histAllTSigChi2SigRF->Draw("same");
+    //if (histAllTSigChi2ComRF){histAllTSigChi2ComRF->Scale(compScale); 
+    //                          histAllTSigChi2ComRF->SetLineColor(kGray+1); 
+    //                          histAllTSigChi2ComRF->Draw("hist,same");} 
     c1->cd(4);
     TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_T");
     TH1F* histAllTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_02S_T");
+    //TH1F* histAllTComChi2SubRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_01S_T");
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2SubRF,histAllTOutChi2SubRF});
     histAllTOutChi2SubRF->SetLineColor(color(7));
     histAllTOutChi2SubRF->SetFillStyle(3002);
@@ -1022,6 +1060,9 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTOutChi2SubRF->Draw("hist,same");
     histAllTSigChi2SubRF->Draw("same");
     drawZeroLine(histAllTSigChi2SubRF);
+    //if (histAllTComChi2SubRF){histAllTComChi2SubRF->Scale(compScale); 
+    //                          histAllTComChi2SubRF->SetLineColor(kGray+1); 
+    //                          histAllTComChi2SubRF->Draw("hist,same");} 
     caption = "Distributions of $-t$. "
               "TOP is high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
               "BOTTOM is all $E_{\\mathrm{beam}}$. "
@@ -1036,6 +1077,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     c1->cd(1);
     TH1F* histLowTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_111_"+histType);
     TH1F* histLowTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_112_"+histType);
+    TH1F* histLowTSigChi2ComRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_111_"+histType);
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2SigRF,histLowTSigChi2OutRF});
     histLowTSigChi2OutRF->SetLineColor(color(3));
     histLowTSigChi2OutRF->SetFillStyle(3002);
@@ -1043,9 +1085,13 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTSigChi2SigRF->Draw("");
     histLowTSigChi2OutRF->Draw("hist,same");
     histLowTSigChi2SigRF->Draw("same");
+    if (histLowTSigChi2ComRF){histLowTSigChi2ComRF->Scale(compScale); 
+                              histLowTSigChi2ComRF->SetLineColor(kGray+1); 
+                              histLowTSigChi2ComRF->Draw("hist,same");} 
     c1->cd(2);
     TH1F* histLowTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_11S_"+histType);
     TH1F* histLowTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_12S_"+histType);
+    TH1F* histLowTComChi2SubRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_11S_"+histType);
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histLowTSigChi2SubRF,histLowTOutChi2SubRF});
     histLowTOutChi2SubRF->SetLineColor(color(7));
     histLowTOutChi2SubRF->SetFillStyle(3002);
@@ -1054,9 +1100,13 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histLowTOutChi2SubRF->Draw("hist,same");
     histLowTSigChi2SubRF->Draw("same");
     drawZeroLine(histLowTSigChi2SubRF);
+    if (histLowTComChi2SubRF){histLowTComChi2SubRF->Scale(compScale); 
+                              histLowTComChi2SubRF->SetLineColor(kGray+1); 
+                              histLowTComChi2SubRF->Draw("hist,same");} 
     c1->cd(3);
     TH1F* histAllTSigChi2SigRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_011_"+histType);
     TH1F* histAllTSigChi2OutRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_012_"+histType);
+    //TH1F* histAllTSigChi2ComRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_011_"+histType);
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2SigRF,histAllTSigChi2OutRF});
     histAllTSigChi2OutRF->SetLineColor(color(3));
     histAllTSigChi2OutRF->SetFillStyle(3002);
@@ -1064,9 +1114,13 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTSigChi2SigRF->Draw("");
     histAllTSigChi2OutRF->Draw("hist,same");
     histAllTSigChi2SigRF->Draw("same");
+    //if (histAllTSigChi2ComRF){histAllTSigChi2ComRF->Scale(compScale); 
+    //                          histAllTSigChi2ComRF->SetLineColor(kGray+1); 
+    //                          histAllTSigChi2ComRF->Draw("hist,same");} 
     c1->cd(4);
     TH1F* histAllTSigChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_01S_"+histType);
     TH1F* histAllTOutChi2SubRF = getTH1FFromHistFile(histFileName,histIndexFS+"_CUTS_02S_"+histType);
+    //TH1F* histAllTComChi2SubRF = getTH1FFromHistFile(histCompName,histIndexFS+"_CUTS_01S_"+histType);
     FSHistogram::setHistogramMaxMin(vector<TH1F*>{histAllTSigChi2SubRF,histAllTOutChi2SubRF});
     histAllTOutChi2SubRF->SetLineColor(color(7));
     histAllTOutChi2SubRF->SetFillStyle(3002);
@@ -1075,6 +1129,9 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
     histAllTOutChi2SubRF->Draw("hist,same");
     histAllTSigChi2SubRF->Draw("same");
     drawZeroLine(histAllTSigChi2SubRF);
+    //if (histAllTComChi2SubRF){histAllTComChi2SubRF->Scale(compScale); 
+    //                          histAllTComChi2SubRF->SetLineColor(kGray+1); 
+    //                          histAllTComChi2SubRF->Draw("hist,same");} 
     caption = "Mass distributions.  "
               "TOP is low $|t|$~($|t|<0.5$~GeV$^{2}$) "
                    "and high $E_{\\mathrm{beam}}$~($E_{\\mathrm{beam}}>8$~GeV); "
@@ -1091,7 +1148,7 @@ pair<TString,TString> makeFigure(TString histFileName, TString subMode, TString 
 }
 
 
-void makePDF(TString histFileName, TString histFileName2, TString outputDirectory, TString baseName){
+void makePDF(TString histFileName, TString histFileName2, TString outputDirectory, TString baseName, TString histCompName, double compScale){
   setModeCode3ParticlesEtc();
   bool isMC = isMCFromHistFile(histFileName);
   TString genFileName("");
@@ -1105,6 +1162,10 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
     if (isMCThrownFromHistFile(histFileName)) return;
   }
   TString fsCode = fsCodeFromHistFile(histFileName);
+  if (histCompName != "" && fsCode != fsCodeFromHistFile(histCompName)){
+    histCompName = "";
+    cout << "WARNING:  input and comparison histogram files don't match, skipping the comparison..." << endl;
+  }
   FSModeInfo miFS(fsCode);
   TString fsDescription(getDescription(miFS,0));
   outputDirectory = FSSystem::getAbsolutePath(outputDirectory,false);
@@ -1237,7 +1298,7 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
         "\\newpage\n\n");
     }
 
-    histInfo = makeFigure(histFileName,subMode,"RFTIME",outputFigures);
+    histInfo = makeFigure(histFileName,subMode,"RFTIME",outputFigures,histCompName,compScale);
     FSString::writeTStringToFile(latexFile,
       "\\subsection{RF $\\Delta t$}\n\n"
       "\\begin{figure}[h!]\n"
@@ -1259,7 +1320,7 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
         "\\end{figure}\n\n");
     }
 
-    histInfo = makeFigure(histFileName,subMode,"CHI2DOF",outputFigures);
+    histInfo = makeFigure(histFileName,subMode,"CHI2DOF",outputFigures,histCompName,compScale);
     FSString::writeTStringToFile(latexFile,
       "\\newpage\n\n"
       "\\subsection{$\\chi^{2}$/dof}\n\n"
@@ -1282,7 +1343,7 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
         "\\end{figure}\n\n");
     }
 
-    histInfo = makeFigure(histFileName,subMode,"T",outputFigures);
+    histInfo = makeFigure(histFileName,subMode,"T",outputFigures,histCompName,compScale);
     FSString::writeTStringToFile(latexFile,
       "\\newpage\n\n"
       "\\subsection{$-t$}\n\n"
@@ -1311,7 +1372,7 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
       int modeCode1 = FSString::TString2int(modeCodes[2]); 
       int modeCode2 = FSString::TString2int(modeCodes[1]);
       int modeCode3 = FSString::TString2int(modeCodes[0]); 
-      histInfo = makeFigure(histFileName,subMode,"MASS_"+massCombinations[j],outputFigures);
+      histInfo = makeFigure(histFileName,subMode,"MASS_"+massCombinations[j],outputFigures,histCompName,compScale);
       TString title = "Mass($"+
         FSString::root2latexSymbols(FSString::rootSymbols(getDescription(FSModeInfo(modeCode1,modeCode2),modeCode3)))
         +"$)";
