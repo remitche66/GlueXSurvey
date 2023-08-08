@@ -1134,6 +1134,7 @@ void makePDF(TString histFileName, TString histFileName2, TString outputDirector
     "  \\item The number of unused tracks is $\\le 1$.\n"
     "  \\item The number of unused neutrals is $\\le 2$.\n"
     "  \\item All photons have a shower quality $>0.5$.\n"
+    "  \\item All $K_{S}$ have a flight significance $>3.0\\sigma$.\n"
     "  \\item Cuts on all intermediate state masses are 50~MeV wide,\n"
     "  including $\\pi^0$, $\\eta$, $K_{S}$, and $\\Lambda$ masses (when not constrained).\n"
     "  \\item The captions under the figures indicate when cuts on RF timing, $\\chi^2$/dof, $t$,\n" 
